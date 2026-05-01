@@ -21,6 +21,11 @@ messages:
   only_players: "&cThis command can only be used by players."
   player_not_online: "&cPlayer &f%player% &cis not online."
   stats_unavailable: "&cStats are not available right now."
+  # ── Updates ───────────────────────────────────────────────────
+  update_title: "&a&lUPDATE AVAILABLE"
+  update_subtitle: "&7v%current_version% &8\u279c &av%latest_version%"
+  update_available: "&fA new update &a(v%latest_version%) &fis available! You are running &c(v%current_version%)&f."
+  update_link: "&eDownload: &n%version_url%"
 
   # ── Room management ───────────────────────────────────────────
   room_created: "&aRoom &f%room% &acreated with type &f%type%&a."
@@ -147,11 +152,6 @@ messages:
   wg_region_not_found: "&cWorldGuard region &f%room% &cwas not found in this world."
   wg_region_linked: "&7Linked region: &a%room%"
 
-  # ── Debug ─────────────────────────────────────────────────────
-  debug_force_success: "&aForced start executed for room %room%."
-  debug_addbot_success: "&aTest player &f%player% &aadded to room &f%room%&a."
-  debug_addbot_failed: "&cCould not add &f%player% &cto room &f%room%&c."
-
   # ── Command usage ─────────────────────────────────────────────
   invalid_amount: "&cAmount must be a valid number (example: 2 or 2v2)."
   usage_create: "&cUsage: /zmrooms create <name> <NORMAL|CLAN>"
@@ -162,7 +162,6 @@ messages:
   usage_invite: "&cUsage: /zmrooms invite <room> <clan>"
   usage_accept: "&cUsage: /zmrooms accept <room>"
   usage_stop: "&cUsage: /zmrooms stop <room>"
-  usage_debug: "&cUsage: /zmrooms debug <forcestart|addbot> <room> [player]"
   usage_save: "&cUsage: /zmrooms save <positions|arena|all> [room]"
   usage_pos: "&cUsage: /zmrooms pos1 <room> or /zmrooms pos2 <room>"
   usage_setspectate: "&cUsage: /zmrooms setspectate <room>"

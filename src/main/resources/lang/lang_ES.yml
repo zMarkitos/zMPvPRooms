@@ -147,11 +147,6 @@ messages:
   wg_region_not_found: "&cNo se encontro la region de WorldGuard &f%room%&c en este mundo."
   wg_region_linked: "&7Region vinculada: &a%room%"
 
-  # Debug
-  debug_force_success: "&aInicio forzado de la sala %room% ejecutado."
-  debug_addbot_success: "&aJugador de prueba &f%player% &aagregado a la sala &f%room%&a."
-  debug_addbot_failed: "&cNo se pudo agregar a &f%player% &ca la sala &f%room%&c."
-
   # Uso de comandos 
   invalid_amount: "&cLa cantidad debe ser un numero valido (ej: 2 o 2v2)."
   usage_create: "&cUso: /zmrooms create <nombre> <NORMAL|CLAN>"
@@ -162,14 +157,18 @@ messages:
   usage_invite: "&cUso: /zmrooms invite <sala> <clan>"
   usage_accept: "&cUso: /zmrooms accept <sala>"
   usage_stop: "&cUso: /zmrooms stop <sala>"
-  usage_debug: "&cUso: /zmrooms debug <forcestart|addbot> <sala> [jugador]"
   usage_save: "&cUso: /zmrooms save <positions|arena|all> [sala]"
   usage_pos: "&cUso: /zmrooms pos1 <sala> o /zmrooms pos2 <sala>"
   usage_setspectate: "&cUso: /zmrooms setspectate <sala>"
   usage_spectate: "&cUso: /zmrooms spectate <sala|leave>"
   usage_reload: "&cUso: /zmrooms reload"
+  # ── Actualizaciones ───────────────────────────────────────────
+  update_title: "&a&lACTUALIZACIÓN DISPONIBLE"
+  update_subtitle: "&7v%current_version% &8➜ &av%latest_version%"
+  update_available: "&f¡Hay una nueva actualización &a(v%latest_version%)&f! Estás usando &c(v%current_version%)&f."
+  update_link: "&eDescargar: &n%version_url%"
 
-  # ── Menú de ayuda ─────────────────────────────────────────────
+  # ── Gestión de salas ─────────────────────────────────────────────
   help_header: "&8&m----------------------------------------"
   help_title: "&c&lzMPvPRooms &7- Ayuda"
   help_create: "&e/zmrooms create <nombre> <tipo> &7- Crea una sala"

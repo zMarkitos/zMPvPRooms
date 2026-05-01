@@ -32,7 +32,7 @@ public class MainTabCompleter implements TabCompleter {
                     Arrays.asList("join", "leave", "spectate", "bet", "stats", "start", "invite", "accept", "stop"));
             if (sender.hasPermission("zmrooms.admin") || sender.hasPermission("zmrooms.create")) {
                 subCommands.addAll(Arrays.asList("create", "delete", "edit", "pos1", "pos2", "setspectate", "setspawn",
-                        "reload", "save", "start", "debug"));
+                        "reload", "save", "start"));
             }
             return StringUtil.copyPartialMatches(args[0], subCommands, completions);
         }
@@ -64,13 +64,6 @@ public class MainTabCompleter implements TabCompleter {
                 case "create":
                     completions.add("<nombre>");
                     return completions;
-                case "debug":
-                    if (sender.hasPermission("zmrooms.admin")) {
-                        completions.add("forcestart");
-                        completions.add("addbot");
-                        return completions;
-                    }
-                    break;
                 case "save":
                     if (sender.hasPermission("zmrooms.admin")) {
                         completions.add("positions");
@@ -105,12 +98,6 @@ public class MainTabCompleter implements TabCompleter {
                         }
                     }
                     return Collections.singletonList("<clan>");
-                case "debug":
-                    if (args[1].equalsIgnoreCase("forcestart") || args[1].equalsIgnoreCase("addbot")) {
-                        List<String> rooms = new ArrayList<>(plugin.getRoomManager().getRooms().keySet());
-                        return StringUtil.copyPartialMatches(args[2], rooms, completions);
-                    }
-                    break;
                 case "save":
                     if (args[1].equalsIgnoreCase("positions") || args[1].equalsIgnoreCase("arena")
                             || args[1].equalsIgnoreCase("all")) {
@@ -125,11 +112,6 @@ public class MainTabCompleter implements TabCompleter {
                     List<String> rooms = new ArrayList<>(plugin.getRoomManager().getRooms().keySet());
                     return StringUtil.copyPartialMatches(args[2], rooms, completions);
             }
-        }
-
-        if (args.length == 4 && args[0].equalsIgnoreCase("debug") && args[1].equalsIgnoreCase("addbot")) {
-            List<String> players = Bukkit.getOnlinePlayers().stream().map(Player::getName).collect(Collectors.toList());
-            return StringUtil.copyPartialMatches(args[3], players, completions);
         }
 
         return Collections.emptyList();

@@ -22,7 +22,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class VersionChecker implements Listener {
 
     private static final String API_URL = "https://api.spigotmc.org/legacy/update.php?resource=%s";
-    private static final String RESOURCE_ID = "134087";
+    private static final String RESOURCE_ID = "0";
     private static final String VERSION_PAGE_URL = "https://www.spigotmc.org/resources/%s/";
     private static final String NOTIFICATION_PERMISSION = "zmpvprooms.update";
 

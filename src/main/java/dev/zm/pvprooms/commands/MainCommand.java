@@ -53,9 +53,6 @@ public class MainCommand implements CommandExecutor {
             case "start":
                 handleStart(sender, args);
                 break;
-            case "debug":
-                handleDebug(sender, args);
-                break;
             case "invite":
                 handleInvite(sender, args);
                 break;
@@ -354,60 +351,6 @@ public class MainCommand implements CommandExecutor {
         }
         player.sendMessage(plugin.getConfigManager().getMessage("not_in_room"));
     }
-
-    private void handleDebug(CommandSender sender, String[] args) {
-        if (!sender.hasPermission("zmrooms.admin")) {
-            sender.sendMessage(plugin.getConfigManager().getMessage("no_permission"));
-            return;
-        }
-
-        if (args.length < 3) {
-            sender.sendMessage(plugin.getConfigManager().getMessage("usage_debug"));
-            return;
-        }
-
-        String action = args[1].toLowerCase();
-        String roomName = args[2];
-
-        Optional<Room> room = roomManager.getRoom(roomName);
-        if (!room.isPresent()) {
-            sender.sendMessage(plugin.getConfigManager().getMessage("room_not_found").replace("%room%", roomName));
-            return;
-        }
-
-        if (action.equals("forcestart")) {
-            plugin.getMatchManager().forceStart(room.get());
-            sender.sendMessage(plugin.getConfigManager().getMessage("debug_force_success").replace("%room%", roomName));
-            return;
-        }
-
-        if (action.equals("addbot")) {
-            if (args.length < 4) {
-                sender.sendMessage(plugin.getConfigManager().getMessage("usage_debug"));
-                return;
-            }
-
-            Player target = Bukkit.getPlayerExact(args[3]);
-            if (target == null) {
-                sender.sendMessage(plugin.getConfigManager().getMessage("player_not_online")
-                        .replace("%player%", args[3]));
-                return;
-            }
-
-            boolean success = plugin.getMatchManager().forceJoinRoom(target, room.get());
-            if (!success) {
-                sender.sendMessage(plugin.getConfigManager().getMessage("debug_addbot_failed")
-                        .replace("%player%", target.getName())
-                        .replace("%room%", room.get().getName()));
-                return;
-            }
-
-            sender.sendMessage(plugin.getConfigManager().getMessage("debug_addbot_success")
-                    .replace("%player%", target.getName())
-                    .replace("%room%", room.get().getName()));
-        }
-    }
-
     private void handleBet(CommandSender sender, String[] args) {
         if (!(sender instanceof Player)) {
             sender.sendMessage(plugin.getConfigManager().getMessage("only_players"));

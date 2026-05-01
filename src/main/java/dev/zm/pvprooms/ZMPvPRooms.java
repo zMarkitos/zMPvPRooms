@@ -78,19 +78,28 @@ public final class ZMPvPRooms extends JavaPlugin {
         log("&7&m----------------------------------------");
         log("&c&lzMPvPRooms &7v" + getDescription().getVersion());
         log("&7");
-        if (database != null) log("&7• &fSQLite: &aConnected");
-        if (getServer().getPluginManager().getPlugin("PlaceholderAPI") != null) log("&7• &fPlaceholderAPI: &aHooked");
-        else log("&7• &fPlaceholderAPI: &cNot found");
-        
-        if (getServer().getPluginManager().getPlugin("Vault") != null) log("&7• &fVault: &aHooked");
-        else log("&7• &fVault: &cNot found");
-        
-        if (clanProvider != null) log("&7• &fClan Hook: &a" + clanProvider.getProviderName());
-        else log("&7• &fClan Hook: &cNone");
-        
-        if (worldGuardHook != null) log("&7• &fWorldGuard: &aHooked");
-        else log("&7• &fWorldGuard: &cNot found");
-        
+        if (database != null)
+            log("&7• &fSQLite: &aConnected");
+        if (getServer().getPluginManager().getPlugin("PlaceholderAPI") != null)
+            log("&7• &fPlaceholderAPI: &aHooked");
+        else
+            log("&7• &fPlaceholderAPI: &cNot found");
+
+        if (getServer().getPluginManager().getPlugin("Vault") != null)
+            log("&7• &fVault: &aHooked");
+        else
+            log("&7• &fVault: &cNot found");
+
+        if (clanProvider != null)
+            log("&7• &fClan Hook: &a" + clanProvider.getProviderName());
+        else
+            log("&7• &fClan Hook: &cNone");
+
+        if (worldGuardHook != null)
+            log("&7• &fWorldGuard: &aHooked");
+        else
+            log("&7• &fWorldGuard: &cNot found");
+
         log("&7");
         log("&a✔ &fPlugin enabled successfully &7(" + time + "ms)");
         log("&7• &fRooms loaded: &c" + roomManager.getRooms().size());
