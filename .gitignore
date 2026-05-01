@@ -47,3 +47,4 @@ Thumbs.db
 # Custom folders
 _tmp_uclans_api/
 .github/
+dependency-reduced-pom.xml
