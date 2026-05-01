@@ -27,6 +27,8 @@ import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import dev.zm.pvprooms.utils.VersionChecker;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
@@ -44,6 +46,7 @@ public final class ZMPvPRooms extends JavaPlugin {
     private EditorManager editorManager;
     private ClanProvider clanProvider;
     private WorldGuardHook worldGuardHook;
+    private VersionChecker versionChecker;
 
     @Override
     public void onEnable() {
@@ -60,6 +63,9 @@ public final class ZMPvPRooms extends JavaPlugin {
         // Schedule one-tick-delayed cleanup for any room that still has
         // players registered from a previous session that crashed/restarted.
         getServer().getScheduler().runTask(this, this::recoverInterruptedSessions);
+
+        versionChecker = new VersionChecker(this);
+        versionChecker.refresh();
 
         getLogger().log(Level.INFO, "zMPvPRooms enabled in {0}ms.", System.currentTimeMillis() - start);
     }
@@ -285,6 +291,7 @@ public final class ZMPvPRooms extends JavaPlugin {
     public EditorManager getEditorManager()   { return editorManager; }
     public ClanProvider getClanProvider()     { return clanProvider; }
     public WorldGuardHook getWorldGuardHook() { return worldGuardHook; }
+    public VersionChecker getVersionChecker() { return versionChecker; }
 
     public void reloadAll() {
         reloadConfig();
@@ -292,6 +299,9 @@ public final class ZMPvPRooms extends JavaPlugin {
         roomManager.loadRooms();
         setupClanHook();
         setupWorldGuardHook();
+        if (versionChecker != null) {
+            versionChecker.refresh();
+        }
     }
 
     // ---- Return spawn (persisted in DB + config.yml) ----
@@ -303,7 +313,7 @@ public final class ZMPvPRooms extends JavaPlugin {
     public void setReturnSpawn(Location location) {
         if (location == null || location.getWorld() == null) return;
         getConfig().set("settings.return-spawn", location);
-        saveConfig();
+        // saveConfig(); // Removed to prevent Bukkit from stripping config.yml comments
         if (database != null) {
             database.setSetting("return_spawn", serializeLocation(location));
         }

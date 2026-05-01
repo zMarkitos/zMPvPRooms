@@ -1,34 +1,42 @@
 # ================================================================
-# zMPvPRooms - Configuración Principal
+# zMPvPRooms - Main Configuration
 # ================================================================
-# Documentación: https://github.com/zMarkitos_/zMPvPRooms
-# Requiere /zmrooms reload para aplicar cambios en caliente.
+# Documentation: https://zmarkitos.gitbook.io/zmpvprooms 
+# Run /zmrooms reload to apply changes without restarting.
 # ================================================================
+
+# ================================================================
+# Do not modify this value, it is used to check for config updates.
+# ================================================================
+config-version: 1.0
 
 settings:
-  # Idioma de mensajes. Carpeta: /plugins/zMPvPRooms/lang/
-  # Archivos disponibles: ES, EN
+  # Message language. Folder: /plugins/zMPvPRooms/lang/
+  # Available files: ES, EN
   language: "EN"
 
-  # Activa el módulo de apuestas y sus GUIs.
-  # false = el comando /zmrooms bet muestra "próximamente".
+  # Enables the betting module and its GUIs.
+  # false = /zmrooms bet will show "coming soon".
   bets-enabled: false
 
-  # Habilita la base de datos SQLite para estadísticas de jugadores.
-  # Si se desactiva, /zmrooms stats no estará disponible.
+  # Enables SQLite database for player statistics.
+  # If disabled, /zmrooms stats will not be available.
   use-sqlite: true
 
-  # Spawn de retorno al que se teletransporta a los jugadores al salir de
-  # una sala. Si no está configurado, se usa el spawn del mundo principal.
-  # Usa: /zmrooms setspawn (parado en el lugar deseado).
-  # return-spawn: <configurado automáticamente>
+  # Checks for updates on SpigotMC on startup and notifies admins.
+  check-updates: true
+
+  # Return spawn where players are teleported after leaving
+  # a room. If not set, the main world spawn is used.
+  # Use: /zmrooms setspawn (stand where you want it).
+  # return-spawn: <auto-configured>
 
 # ================================================================
-# Protección de arena
+# Arena protection
 # ================================================================
 room-protection:
-  # Lista de comandos bloqueados mientras el jugador está dentro de
-  # una sala (jugando o como espectador). No uses la / al inicio.
+  # Commands blocked while the player is inside a room
+  # (playing or spectating). Do not include the "/" prefix.
   blacklist-commands:
     - "spawn"
     - "home"
@@ -42,111 +50,111 @@ room-protection:
     - "enderchest"
     - "menu"
 
-  # true  → los jugadores pueden abrir cofres, hornos, etc. dentro del arena.
-  # false → cualquier inventario externo está bloqueado dentro de la sala.
+  # true  → players can open chests, furnaces, etc. inside the arena.
+  # false → any external inventory is blocked inside the room.
   allow-external-inventories: true
 
 # ================================================================
-# Integraciones (Hooks)
+# Integrations (Hooks)
 # ================================================================
 hooks:
-  # Activa PlaceholderAPI. Registra los prefijos:
+  # Enables PlaceholderAPI. Registers prefixes:
   # %rooms_...%, %zmrooms_...%, %zmpvp_...%, %zmpvprooms_..%
   placeholderapi: true
 
-  # Activa Vault para funciones de economía (apuestas monetarias).
+  # Enables Vault for economy features (money bets).
   vault: true
 
-  # Activa WorldGuard. Necesario para la creación de salas y detección
-  # automática de entradas/huecos en las arenas.
+  # Enables WorldGuard. Required for room creation and
+  # automatic detection of arena boundaries/openings.
   worldguard: true
 
   clans:
-    # Activa todos los proveedores de clanes.
+    # Enables all clan providers.
     enabled: true
 
-    # Activa el proveedor UltimateClans / uClans.
+    # Enables UltimateClans / uClans provider.
     ultimateclans: true
 
-    # Prioridad de detección. El primer plugin disponible será usado.
+    # Detection priority. The first available plugin will be used.
     provider-priority:
       - "UltimateClans"
       - "uClans"
 
 # ================================================================
-# Equipos (solo afecta salas NORMAL con más de 1v1)
+# Teams (only affects NORMAL rooms with more than 1v1)
 # ================================================================
 teams:
-  # Nombre del equipo 1 (soporte de colores &).
+  # Team 1 name (supports & color codes).
   red-name: "&cRed Team"
-  # Nombre del equipo 2 (soporte de colores &).
+  # Team 2 name (supports & color codes).
   blue-name: "&9Blue Team"
 
 # ================================================================
-# Bossbar del duelo
+# Duel bossbar
 # ================================================================
 duel-bossbar:
-  # Activa la bossbar para participantes y espectadores.
+  # Enables bossbar for participants and spectators.
   enabled: true
 
   # Color: PINK, BLUE, RED, GREEN, YELLOW, PURPLE, WHITE
   color: "RED"
 
-  # Estilo: SOLID, SEGMENTED_6, SEGMENTED_10, SEGMENTED_12, SEGMENTED_20
+  # Style: SOLID, SEGMENTED_6, SEGMENTED_10, SEGMENTED_12, SEGMENTED_20
   style: "SOLID"
 
-  # Plantillas globales de fallback (se usan si no hay plantilla por tipo).
+  # Global fallback templates (used if no type-specific template exists).
   # Placeholders: %time%, %alive1%, %alive2%, %room%
   with-limit: "&cTime left: &f%time%s"
   no-limit: "&eNo limit: until one player dies"
 
-  # Plantilla para salas NORMAL
+  # Template for NORMAL rooms
   normal:
     with-limit: "&cNORMAL &8| &f%alive1%v%alive2% &8| &e%time%s"
     no-limit: "&aNORMAL &8| &f%alive1%v%alive2% &8| &7Deathmatch"
 
-  # Plantilla para salas CLAN
+  # Template for CLAN rooms
   clan:
     with-limit: "&6CLAN &8| &f%alive1%v%alive2% &8| &e%time%s"
     no-limit: "&6CLAN &8| &f%alive1%v%alive2% &8| &7Until death/disconnect"
 
 # ================================================================
-# Tablas de clasificación (leaderboards)
+# Leaderboards
 # ================================================================
 leaderboards:
-  # Número de entradas por categoría (recomendado ≥ 10).
+  # Number of entries per category (recommended ≥ 10).
   size: 10
 
-  # Tiempo en segundos entre refrescos del cache global.
+  # Cache refresh time in seconds.
   cache-seconds: 30
 
-  # Tiempo en milisegundos de vida del cache de estadísticas personales.
+  # Personal stats cache lifetime in milliseconds.
   personal-cache-ms: 3000
 
 # ================================================================
-# Efectos de celebración al ganar
+# Win celebration effects
 # ================================================================
 celebration:
   firework:
-    # Activa fuegos artificiales para el ganador de salas NORMAL 1v1.
+    # Enables fireworks for the winner in NORMAL 1v1 rooms.
     enabled: true
 
-    # Activa fuegos artificiales para el clan ganador de salas CLAN.
+    # Enables fireworks for the winning clan in CLAN rooms.
     clan-enabled: true
 
-    # Cantidad de cohetes disparados.
+    # Amount of rockets launched.
     count: 3
 
-    # Potencia del cohete (0 = explota en suelo, 4 = máxima altura).
+    # Rocket power (0 = ground explosion, 4 = max height).
     power: 1
 
-    # Efecto de parpadeo en la explosión.
+    # Explosion flicker effect.
     flicker: true
 
-    # Efecto de estela en vuelo.
+    # Trail effect while flying.
     trail: true
 
-    # Colores de la explosión. Valores válidos:
+    # Explosion colors. Valid values:
     # AQUA, BLACK, BLUE, FUCHSIA, GRAY, GREEN, LIME, MAROON,
     # NAVY, OLIVE, ORANGE, PURPLE, RED, SILVER, TEAL, WHITE, YELLOW
     colors:
@@ -155,43 +163,43 @@ celebration:
       - "WHITE"
 
   sound:
-    # Activa el sonido de victoria.
+    # Enables victory sound.
     enabled: true
 
-    # Nombre del sonido (enum Bukkit Sound).
+    # Sound name (Bukkit Sound enum).
     name: "ENTITY_FIREWORK_ROCKET_LAUNCH"
 
-    # Volumen (0.0 – 1.0+).
+    # Volume (0.0 – 1.0+).
     volume: 1.0
 
-    # Tono (0.5 = grave, 2.0 = agudo).
+    # Pitch (0.5 = low, 2.0 = high).
     pitch: 1.0
 
   nearby-title:
-    # Envía un título de victoria a jugadores cercanos fuera de salas.
+    # Sends a victory title to nearby players outside rooms.
     enabled: true
 
-    # Radio en bloques desde la posición del ganador.
+    # Radius in blocks from the winner's position.
     radius: 10.0
 
-    # Placeholders disponibles: %winner%, %room%
+    # Available placeholders: %winner%, %room%
     title: "&6%winner% &ewon!"
     subtitle: "&7Room: &f%room%"
 
-    # Animación del título (en ticks: 20 ticks = 1 segundo).
+    # Title animation (in ticks: 20 ticks = 1 second).
     fade-in: 10
     stay: 40
     fade-out: 10
 
 # ================================================================
-# Efectos al entrar a una sala CLAN
+# Effects when joining a CLAN room
 # ================================================================
 clan-join-effects:
-  # Activa todos los efectos de esta sección.
+  # Enables all effects in this section.
   enabled: true
 
   title:
-    # Activa el título de bienvenida al entrar a sala CLAN.
+    # Enables welcome title when joining a CLAN room.
     enabled: true
     # Placeholders: %room%, %clan%
     text: "&6&lCLAN ROOM"
@@ -201,15 +209,15 @@ clan-join-effects:
     fade-out: 10
 
   actionbar:
-    # Activa el actionbar al entrar a sala CLAN.
+    # Enables actionbar when joining a CLAN room.
     enabled: true
     # Placeholders: %clan%, %room%
     text: "&6Clan: &f%clan% &8| &eRoom: &f%room%"
 
   sound:
-    # Activa el sonido al entrar a sala CLAN.
+    # Enables sound when joining a CLAN room.
     enabled: true
-    # Nombre del sonido (enum Bukkit Sound).
+    # Sound name (Bukkit Sound enum).
     name: "BLOCK_BEACON_ACTIVATE"
     volume: 1.0
     pitch: 1.15

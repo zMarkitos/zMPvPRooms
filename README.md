@@ -6,7 +6,7 @@ A premium, highly-optimized, and professional PvP arena system for Minecraft ser
 
 * **Two Game Modes:**
   * **NORMAL:** Standard PvP rooms (1v1, 2v2, FFA).
-  * **CLAN:** Exclusive clan versus clan warfare.
+  * **CLAN:** Exclusive clan versus clan warfare. (Ultimate Clans)
 * **Premium Optimizations:**
   * Uses SQLite with `WAL` mode and atomic Upserts for crash-proof, zero-lag statistics.
   * Asynchronous leaderboards that never drop TPS.
@@ -26,9 +26,9 @@ A premium, highly-optimized, and professional PvP arena system for Minecraft ser
 * **Minecraft 1.19+** (Compatible up to 1.21)
 
 ### Soft Dependencies (Hooks)
-* [PlaceholderAPI](https://www.spigotmc.org/resources/placeholderapi.6245/) - For statistics and leaderboards.
-* [WorldGuard](https://dev.bukkit.org/projects/worldguard) - For auto-entrance and arena border detection.
-* [UltimateClans (v8)](https://www.spigotmc.org/resources/ultimate-clans.59779/) - For Clan VS Clan mode.
+* [PlaceholderAPI](https://modrinth.com/plugin/placeholderapi) - For statistics and leaderboards.
+* [WorldGuard](https://modrinth.com/plugin/worldguard) - For auto-entrance and arena border detection.
+* [UltimateClans (v8)](https://builtbybit.com/resources/ultimate-clans.40390/) - For Clan VS Clan mode.
 * [Vault](https://www.spigotmc.org/resources/vault.34315/) - For future betting implementations.
 
 ---
@@ -40,31 +40,31 @@ A premium, highly-optimized, and professional PvP arena system for Minecraft ser
 3. Use the `/zmrooms` command to set the global return spawn and start creating arenas.
 
 ### Basic Setup Commands
+* `/zmrooms create <name>` - Creates a new arena with the given name.
+* `/zmrooms edit` - Opens the visual arena creator GUI.
 * `/zmrooms setspawn` - Sets the global return spawn for all matches.
-* `/zmrooms editor` - Opens the visual arena creator GUI.
-* `/zmrooms wand` - Gives the wand to select arena boundaries.
 
 ---
 
 ## 📊 PlaceholderAPI
 
-The plugin registers the expansions `rooms`, `zmrooms`, `zmpvp`, and `zmpvprooms`.
+The plugin registers the expansions `zmrooms`.
 
 ### General
-* `%rooms_currentzone%` - Returns the arena the player is in, or `none`.
+* `%zmrooms_currentzone%` - Returns the arena the player is in, or `none`.
 
 ### Personal Statistics
-* `%rooms_kills%`, `%rooms_deaths%`, `%rooms_wins%`, `%rooms_losses%` - Total combined stats.
-* `%rooms_kdr%` - Global Kill/Death Ratio.
-* `%rooms_streak%` - Current win streak.
-* Specific modes: `%rooms_mynormalkills%`, `%rooms_myclanwins%`, etc.
+* `%zmrooms_kills%`, `%zmrooms_deaths%`, `%zmrooms_wins%`, `%zmrooms_losses%` - Total combined stats.
+* `%zmrooms_kdr%` - Global Kill/Death Ratio.
+* `%zmrooms_streak%` - Current win streak.
+* Specific modes: `%zmrooms_mynormalkills%`, `%zmrooms_myclanwins%`, etc.
 
 ### Leaderboards (Top)
-* **Format:** `%rooms_top_<column>_<rank>%` (Returns Player Name)
-* **Format:** `%rooms_top_<column>_value_<rank>%` (Returns Score Value)
+* **Format:** `%zmrooms_top_<column>_<rank>%` (Returns Player Name)
+* **Format:** `%zmrooms_top_<column>_value_<rank>%` (Returns Score Value)
 * **Valid columns:** `normal_wins`, `clan_wins`, `normal_kills`, `clan_kills`, `normal_deaths`, `clan_deaths`
 
-*Example:* `%rooms_top_normal_wins_1%` -> Returns the name of the #1 player in Normal Wins.
+*Example:* `%zmrooms_top_normal_wins_1%` -> Returns the name of the #1 player in Normal Wins.
 
 ---
 
