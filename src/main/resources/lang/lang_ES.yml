@@ -1,0 +1,339 @@
+# ================================================================
+# zMPvPRooms - Archivo de idioma: Español (ES)
+# ================================================================
+# Soporta: códigos &, hex &#RRGGBB, y MiniMessage (<red>, etc.)
+# ================================================================
+
+prefix: "&#FF5018&lz&#EA4713&lM&#D43E0E&lP&#BF360A&lv&#A92D05&lP&#942400&lR&#AF2F06&lo&#CA3A0C&lo&#E44512&lm&#FF5018&ls &8| &r"
+
+# ----------------------------------------------------------------
+# General
+# ----------------------------------------------------------------
+general:
+  enabled: "&aActivado"
+  disabled: "&cDesactivado"
+  no_limit: "&7Sin limite"
+
+messages:
+
+  # Errores generales
+  no_permission: "&cNo tienes permisos para ejecutar este comando."
+  only_players: "&cEste comando solo puede ser ejecutado por jugadores."
+  player_not_online: "&cEl jugador &f%player% &cno esta conectado."
+  stats_unavailable: "&cLas estadisticas no estan disponibles en este momento."
+
+  # Gestión de salas
+  room_created: "&aSala &f%room% &acreada correctamente de tipo &f%type%&a."
+  room_already_exists: "&cLa sala &f%room% &cya existe."
+  room_not_found: "&cLa sala &f%room% &cno fue encontrada."
+  room_deleted: "&cSala &f%room% &celiminada correctamente."
+  room_not_waiting: "&cLa sala no esta en estado de espera."
+  room_full: "&cLa sala esta llena."
+  room_not_configured: "&cLa sala no esta bien configurada. Configura arena y spawns."
+  already_in_room: "&cYa estas dentro de una sala o partida."
+  invalid_type: "&cTipo de sala invalido. Usa: NORMAL o CLAN."
+  not_in_room: "&cNo estas dentro de ninguna sala."
+  room_world_mismatch: "&cDebes ejecutar este comando en el mundo de la arena: &f%world%"
+
+  # Protección dentro de sala
+  arena_in_use: "&cHay un combate en curso en esta arena."
+  cannot_leave_arena: "&cNo puedes salir de la arena durante el combate."
+  room_command_blocked: "&cNo puedes usar ese comando mientras estas dentro de una room."
+  room_external_inventory_blocked: "&cNo puedes abrir ese inventario mientras estas dentro de una room."
+  normal_auto_join: "&eLas salas NORMAL se unen entrando a su region, no con /join."
+
+  # Feedback de entrada/salida
+  match_join_welcome_title: "&6&l⚔ Entraste a Combate"
+  match_join_welcome_subtitle: "&fSala: &c%room%"
+  match_join_actionbar: "&7Sala: &e%room%"
+  match_join_chat: "&7Has entrado a la sala &e%room%&7."
+  room_leave_title: "&c&lSaliste de la Sala"
+  room_leave_subtitle: "&7Abandonaste &f%room%"
+  room_leave_actionbar: "&7Ya no estas en &f%room%"
+  room_joined_broadcast: "&a%player% &7se unio a la sala. &8(&e%current%&8/&e%max%&8)"
+  room_left_broadcast: "&c%player% &7salio de la sala. &8(&e%current%&8/&e%max%&8)"
+  clan_room_joined_broadcast: "&a%player% &7del clan &6%clan% &7se unio a la sala &e%room%&7. &8(&e%current%&8/&e%max%&8)"
+
+  # Countdown / inicio
+  match_countdown_start: "&eLa partida comenzara en &f%time%s&e."
+  match_countdown_cancelled: "&cConteo cancelado: faltan jugadores."
+  match_starting_actionbar: "&7Iniciando en: &e%time%s"
+  match_starting_chat: "&7Iniciando en: &e%time%"
+  match_started_title: "&aLa partida comenzo"
+  match_started_subtitle: "&7Buena suerte"
+  match_started_broadcast: "&aEl combate ha comenzado."
+  match_team_assigned: "&7Has sido asignado al equipo %team%&7."
+
+  # Durante el combate
+  match_player_eliminated: "&c%player% &7ha sido eliminado."
+  match_player_left_lose: "&c%player% &7abandono el combate y pierde."
+  match_draw_broadcast: "&cTiempo agotado. El duelo termina en empate."
+
+  # Fin de partida
+  match_ended_broadcast: "&aEl combate ha terminado."
+  match_winner_broadcast: "&eGanador: &a%winner%"
+  match_winner_duel_broadcast: "&a%winner% &fgano a &c%loser%&f."
+  match_winner_team_broadcast: "&a%winner_team% &fgano contra &c%loser_team%&f."
+  match_win_title: "&6&lVICTORIA"
+  match_win_subtitle: "&fGanaste en &e%room%"
+  match_lose_title: "&c&lDERROTA"
+  match_lose_subtitle: "&7Ganador: &f%winner%"
+
+  # Estadísticas
+  stats_header: "&8&m----------------------------------------"
+  stats_title: "&6&lTus Estadísticas"
+  stats_normal: "&eNormal: &a%wins% &7victorias / &c%losses% &7derrotas"
+  stats_clan: "&6Clan: &a%wins% &7victorias / &c%losses% &7derrotas"
+  stats_footer: "&8&m----------------------------------------"
+
+  # Salas CLAN
+  clan_only_room: "&cEsta sala no es de tipo CLAN."
+  clan_system_disabled: "&cNo hay un plugin de clanes habilitado."
+  no_clan: "&cDebes tener clan para jugar en esta sala."
+  clan_room_two_clans_only: "&cEsta sala solo permite dos clanes por partida."
+  clan_team_full: "&cEl clan &6%clan% &cya completo su cupo (&f%limit%&c)."
+  clan_invalid_composition: "&cComposicion CLAN invalida: debe ser balance exacto por clan para iniciar."
+  clan_challenge: "&eEl clan &6%clan1% &eha lanzado un desafio en &c%room%&e. Usa &b/zmrooms join %room%&e."
+  clan_only_leader_start: "&cSolo el lider del clan puede iniciar un duelo CLAN."
+  clan_not_enough_members: "&cNo tienen suficientes jugadores. Requeridos: &f%required%&c, clan: &f%own%&c, aliados: &f%allys%&c."
+  clan_lobby_started: "&aDesafio CLAN iniciado en &f%room%&a por &6%clan%&a."
+  clan_lobby_already_open: "&cYa hay un desafio CLAN abierto en &f%room%&c."
+  clan_lobby_missing: "&cNo hay un desafio CLAN activo para esta sala."
+  clan_waiting_enemy_accept: "&eAun no hay clan enemigo confirmado. Usa /zmrooms invite."
+  clan_only_owner_manage: "&cSolo quien inicio el desafio puede gestionarlo."
+  clan_enemy_already_selected: "&cEl clan enemigo ya fue seleccionado: &6%clan%&c."
+  clan_cannot_invite_self: "&cNo puedes invitar a tu propio clan."
+  clan_invite_broadcast: "&eEl clan &6%owner_clan% &einvito al clan &6%target_clan% &een la sala &f%room%&e."
+  clan_invite_sent: "&aInvitacion enviada al clan &6%target_clan% &apara la sala &f%room%&a."
+  clan_invite_notify: "&eTu clan fue invitado a un duelo en &f%room%&e. Usa &b/zmr accept %room%"
+  clan_not_invited: "&cTu clan no fue invitado a este duelo."
+  clan_enemy_selected: "&aEl clan enemigo para &f%room% &aes ahora &6%clan%&a."
+  clan_lobby_cancelled_owner: "&cEl desafio CLAN de &f%room% &cfue cancelado por el iniciador."
+  clan_lobby_cancelled_timeout: "&cEl desafio CLAN de &f%room% &cse cancelo por inactividad (1 minuto)."
+  clan_match_winner_broadcast: "&eClan ganador: &6%clan% &7(liderado por &f%winner%&7)"
+  clan_match_result_broadcast: "&6%winner_clan% &fgano contra &c%loser_clan% &fen la sala &e%room%&f."
+
+  # Espectador
+  spectate_joined: "&aAhora estas espectando la sala &f%room%&a."
+  spectate_left: "&aHas salido del modo espectador."
+  spectate_not_in_mode: "&cNo estas en modo espectador."
+  spectate_spawn_missing: "&cEsta sala no tiene punto de espectador configurado."
+  spectate_room_not_active: "&cSolo puedes espectar salas en STARTING/PLAYING."
+  spectate_cannot_leave: "&cNo puedes salir de la region mientras espectas."
+
+  # Muerte / derrota
+  death_spectate_prompt: "&eMoriste. Puedes usar &f/zmrooms spectate %room%&e para ver el combate o &f/zmrooms leave&e para salir."
+
+  # Apuestas
+  bets_disabled_global: "&cLas apuestas estan deshabilitadas globalmente."
+  bets_coming_soon: "&eLas apuestas estaran disponibles proximamente."
+  bets_disabled_room: "&cLas apuestas estan deshabilitadas en esta sala."
+  bets_room_not_active: "&cSolo puedes apostar cuando la partida esta iniciando o en juego."
+  bets_self_forbidden: "&cNo puedes apostar en una sala donde estas jugando."
+  bets_not_enough_players: "&cNo hay suficientes jugadores para apostar."
+  bets_items_disabled: "&cLa apuesta por items esta desactivada temporalmente por seguridad."
+  bets_selection_saved: "&aSeleccion de apuesta guardada."
+
+  # Admin / setup
+  set_pos_success: "&aPosicion del equipo &f%team% &aguardada para &f%room%&a."
+  set_spectate_success: "&aPosicion de espectador guardada para &f%room%&a."
+  setspawn_success: "&aSpawn global configurado correctamente."
+  reload_success: "&aConfiguracion, salas e idiomas recargados."
+  setup_hint: "&eConfigura esta sala con: &f/zmrooms pos1 %room%&e, &f/zmrooms pos2 %room%&e, &f/zmrooms setspectate %room%&e."
+
+  save_success: "&aGuardado &f%mode% &aaplicado para &f%room%&a. Huecos detectados: &e%detected%&a."
+  save_room_required: "&cDebes indicar una sala o estar editando/dentro de una."
+  wg_required: "&cWorldGuard es requerido para este guardado."
+  wg_region_not_found: "&cNo se encontro la region de WorldGuard &f%room%&c en este mundo."
+  wg_region_linked: "&7Region vinculada: &a%room%"
+
+  # Debug
+  debug_force_success: "&aInicio forzado de la sala %room% ejecutado."
+  debug_addbot_success: "&aJugador de prueba &f%player% &aagregado a la sala &f%room%&a."
+  debug_addbot_failed: "&cNo se pudo agregar a &f%player% &ca la sala &f%room%&c."
+
+  # Uso de comandos 
+  invalid_amount: "&cLa cantidad debe ser un numero valido (ej: 2 o 2v2)."
+  usage_create: "&cUso: /zmrooms create <nombre> <NORMAL|CLAN>"
+  usage_delete: "&cUso: /zmrooms delete <nombre>"
+  usage_join: "&cUso: /zmrooms join <nombre>"
+  usage_bet: "&cUso: /zmrooms bet <nombre>"
+  usage_start: "&cUso: /zmrooms start <sala>"
+  usage_invite: "&cUso: /zmrooms invite <sala> <clan>"
+  usage_accept: "&cUso: /zmrooms accept <sala>"
+  usage_stop: "&cUso: /zmrooms stop <sala>"
+  usage_debug: "&cUso: /zmrooms debug <forcestart|addbot> <sala> [jugador]"
+  usage_save: "&cUso: /zmrooms save <positions|arena|all> [sala]"
+  usage_pos: "&cUso: /zmrooms pos1 <sala> o /zmrooms pos2 <sala>"
+  usage_setspectate: "&cUso: /zmrooms setspectate <sala>"
+  usage_spectate: "&cUso: /zmrooms spectate <sala|leave>"
+  usage_reload: "&cUso: /zmrooms reload"
+
+  # ── Menú de ayuda ─────────────────────────────────────────────
+  help_header: "&8&m----------------------------------------"
+  help_title: "&c&lzMPvPRooms &7- Ayuda"
+  help_create: "&e/zmrooms create <nombre> <tipo> &7- Crea una sala"
+  help_delete: "&e/zmrooms delete <nombre> &7- Elimina una sala"
+  help_edit: "&e/zmrooms edit [nombre] &7- Edita salas"
+  help_pos1: "&e/zmrooms pos1 <sala> &7- Guarda spawn del equipo 1"
+  help_pos2: "&e/zmrooms pos2 <sala> &7- Guarda spawn del equipo 2"
+  help_setspectate: "&e/zmrooms setspectate <sala> &7- Guarda spawn de espectadores"
+  help_setspawn: "&e/zmrooms setspawn &7- Guarda spawn global de retorno"
+  help_save: "&e/zmrooms save <positions|arena|all> [sala] &7- Guarda/sincroniza configuracion"
+  help_reload: "&e/zmrooms reload &7- Recarga config.yml, rooms.yml y lang"
+  help_start: "&e/zmrooms start <sala> &7- Inicia lobby CLAN"
+  help_invite: "&e/zmrooms invite <sala> <clan> &7- Invita un clan"
+  help_accept: "&e/zmrooms accept <sala> &7- Acepta invitacion de clan"
+  help_stop: "&e/zmrooms stop <sala> &7- Cancela lobby CLAN"
+  help_leave: "&e/zmrooms leave &7- Salir manualmente de la sala"
+  help_spectate: "&e/zmrooms spectate <sala|leave> &7- Entrar/salir del modo espectador"
+  help_join: "&e/zmrooms join <nombre> &7- Unete a una sala"
+  help_bet: "&e/zmrooms bet <nombre> &7- Abrir menu de apuestas"
+  help_stats: "&e/zmrooms stats &7- Ver estadisticas"
+  help_footer: "&8&m----------------------------------------"
+
+# ----------------------------------------------------------------
+# Interfaces gráficas (GUIs)
+# ----------------------------------------------------------------
+guis:
+  rooms_list_title: "&8Lista de Rooms"
+  rooms_list_close_name: "&fCerrar &8→ &#FF5018&lSALIR"
+  rooms_list_close_lore:
+    - ""
+    - " &#FF5018&l| &fCierra este menu"
+    - ""
+    - "&#FF5018■ Click para salir"
+
+  room_menu_title: "&8Room &7| &d%room%"
+  editor_title: "&8Editando &7| &d%room%"
+  room_item_name: "&fRoom &8→ &#FF5018&l%room%"
+  room_item_lore:
+    - ""
+    - " &#FF5018&l| &fTipo: &b%type%"
+    - " &#FF5018&l| &fEstado: &d%state%"
+    - ""
+    - "&#FF5018■ Click para gestionar"
+
+  menu_config_name: "&fConfiguracion &8→ &#FF5018&lEDITAR"
+  menu_config_lore:
+    - ""
+    - " &#FF5018&l| &fEdita opciones de la sala"
+    - ""
+    - "&#FF5018■ Click para abrir"
+
+  menu_info_name: "&fInformacion &8→ &#FF5018&lVER"
+  menu_info_lore:
+    - ""
+    - " &#FF5018&l| &fEstado: &d%state%"
+    - " &#FF5018&l| &fJugadores: &b%players%&7/&b%capacity%"
+    - " &#FF5018&l| &fMinimo: &d%min_players%"
+    - ""
+    - " &#FF5018&l| &fConfigurada: %configured%"
+    - " &#FF5018&l| &fRegion: &7%region%"
+    - " &#FF5018&l| &fArena: %arena%"
+    - " &#FF5018&l| &fSpawn 1: %spawn1%"
+    - " &#FF5018&l| &fSpawn 2: %spawn2%"
+    - " &#FF5018&l| &fSpectator: %spectator%"
+    - ""
+    - " &#FF5018&l| &fHuecos: &e%entries%"
+
+  menu_tp_name: "&fTeleport &8→ &#FF5018&lIR"
+  menu_tp_lore:
+    - ""
+    - " &#FF5018&l| &fIr al punto espectador"
+    - ""
+    - "&#FF5018■ Click para ir"
+
+  menu_back_name: "&fVolver &8→ &#FF5018&lREGRESAR"
+  menu_back_lore:
+    - ""
+    - " &#FF5018&l| &fRegresar al menu anterior"
+    - ""
+    - "&#FF5018■ Click para volver"
+
+  editor_type_name: "&fTipo Sala &8→ &#FF5018&lCAMBIAR"
+  editor_type_lore:
+    - ""
+    - " &#FF5018&l| &fActual: &b%type%"
+    - ""
+    - "&#FF5018■ Click para cambiar"
+
+  editor_keepinv_name: "&fKeep Inventory &8→ &#FF5018&lTOGGLE"
+  editor_keepinv_lore:
+    - ""
+    - " &#FF5018&l| &fEstado: %status%"
+    - " &#FF5018&l| &7Incluye EXP automaticamente"
+    - ""
+    - "&#FF5018■ Click para alternar"
+
+  editor_posttime_name: "&fEspera Ganadores &8→ &#FF5018&lEDITAR"
+  editor_posttime_lore:
+    - ""
+    - " &#FF5018&l| &fActual: &b%time%"
+    - ""
+    - "&#FF5018■ Izq +2s / Der -2s"
+
+  editor_doors_name: "&fMaterial Puertas &8→ &#FF5018&lCAMBIAR"
+  editor_doors_lore:
+    - ""
+    - " &#FF5018&l| &fActual: &b%material%"
+    - ""
+    - "&#FF5018■ Click para cambiar"
+
+  editor_teamsize_name: "&fTamano Equipo &8→ &#FF5018&lEDITAR"
+  editor_teamsize_lore:
+    - ""
+    - " &#FF5018&l| &fActual: &b%size%v%size%"
+    - " &#FF5018&l| &fCapacidad: &f%capacity%"
+    - ""
+    - " &#FF5018&l| &fClic Izq &8→ &#FF5018+1"
+    - " &#FF5018&l| &fClic Der &8→ &#FF5018-1"
+
+  editor_minplayers_name: "&fMinimo Inicio &8→ &#FF5018&lEDITAR"
+  editor_minplayers_lore:
+    - ""
+    - " &#FF5018&l| &fActual: &b%min_players%"
+    - " &#FF5018&l| &fMaximo: &f%capacity%"
+    - ""
+    - " &#FF5018&l| &fClic Izq &8→ &#FF5018+2"
+    - " &#FF5018&l| &fClic Der &8→ &#FF5018-2"
+
+  editor_delay_name: "&fDelay Inicio &8→ &#FF5018&lEDITAR"
+  editor_delay_lore:
+    - ""
+    - " &#FF5018&l| &fActual: &b%delay%s"
+    - ""
+    - " &#FF5018&l| &fClic Izq &8→ &#FF5018+5s"
+    - " &#FF5018&l| &fClic Der &8→ &#FF5018-5s"
+
+  editor_action_name: "&fCanales &8→ &#FF5018&lCONFIG"
+  editor_action_lore:
+    - ""
+    - " &#FF5018&l| &fTitles: %titles%"
+    - " &#FF5018&l| &fActionBar: %actionbar%"
+    - " &#FF5018&l| &fChat: %chat%"
+    - ""
+    - " &#FF5018&l| &fClic Izq &8→ &#FF5018Titles"
+    - " &#FF5018&l| &fClic Der &8→ &#FF5018ActionBar"
+    - " &#FF5018&l| &fShift + Clic &8→ &#FF5018Chat"
+
+  editor_bet_name: "&fModo Apuestas &8→ &#FF5018&lCAMBIAR"
+  editor_bet_lore:
+    - ""
+    - " &#FF5018&l| &fActual: &b%mode%"
+    - ""
+    - "&#FF5018■ Click para alternar"
+
+  editor_maxtime_name: "&fTiempo Maximo &8→ &#FF5018&lCAMBIAR"
+  editor_maxtime_lore:
+    - ""
+    - " &#FF5018&l| &fActual: &b%time%"
+    - ""
+    - "&#FF5018■ Click para cambiar"
+
+  editor_back_name: "&fVolver &8→ &#FF5018&lREGRESAR"
+  editor_back_lore:
+    - ""
+    - " &#FF5018&l| &fRegresar al menu"
+    - ""
+    - "&#FF5018■ Click para volver"

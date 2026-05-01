@@ -1,0 +1,339 @@
+# ================================================================
+# zMPvPRooms - Language file: English (EN)
+# ================================================================
+# Supports: & codes, hex &#RRGGBB, and MiniMessage (<red>, etc.)
+# ================================================================
+
+prefix: "&8[&czMPvPRooms&8] &7"
+
+# ----------------------------------------------------------------
+# General
+# ----------------------------------------------------------------
+general:
+  enabled: "&aEnabled"
+  disabled: "&cDisabled"
+  no_limit: "&7No limit"
+
+messages:
+
+  # ── General errors ────────────────────────────────────────────
+  no_permission: "&cYou do not have permission to run this command."
+  only_players: "&cThis command can only be used by players."
+  player_not_online: "&cPlayer &f%player% &cis not online."
+  stats_unavailable: "&cStats are not available right now."
+
+  # ── Room management ───────────────────────────────────────────
+  room_created: "&aRoom &f%room% &acreated with type &f%type%&a."
+  room_already_exists: "&cRoom &f%room% &calready exists."
+  room_not_found: "&cRoom &f%room% &cwas not found."
+  room_deleted: "&cRoom &f%room% &cdeleted."
+  room_not_waiting: "&cRoom is not in waiting state."
+  room_full: "&cRoom is full."
+  room_not_configured: "&cRoom is not fully configured. Set arena and spawns."
+  already_in_room: "&cYou are already in a room or match."
+  invalid_type: "&cInvalid room type. Use: NORMAL or CLAN."
+  not_in_room: "&cYou are not inside a room."
+  room_world_mismatch: "&cYou must execute this command in the arena world: &f%world%"
+
+  # ── Room protection ───────────────────────────────────────────
+  arena_in_use: "&cThere is an active combat in this arena."
+  cannot_leave_arena: "&cYou cannot leave the arena during combat."
+  room_command_blocked: "&cYou cannot use that command while you are inside a room."
+  room_external_inventory_blocked: "&cYou cannot open that inventory while you are inside a room."
+  normal_auto_join: "&eNORMAL rooms are joined by entering the region, not with /join."
+
+  # ── Join / leave feedback ─────────────────────────────────────
+  match_join_welcome_title: "&6&l⚔ Entered Combat"
+  match_join_welcome_subtitle: "&fRoom: &c%room%"
+  match_join_actionbar: "&7Room: &e%room%"
+  match_join_chat: "&7You joined room &e%room%&7."
+  room_leave_title: "&c&lYou Left The Room"
+  room_leave_subtitle: "&7You left &f%room%"
+  room_leave_actionbar: "&7You are no longer in &f%room%"
+  room_joined_broadcast: "&a%player% &7joined the room. &8(&e%current%&8/&e%max%&8)"
+  room_left_broadcast: "&c%player% &7left the room. &8(&e%current%&8/&e%max%&8)"
+  clan_room_joined_broadcast: "&a%player% &7from clan &6%clan% &7joined room &e%room%&7. &8(&e%current%&8/&e%max%&8)"
+
+  # ── Countdown / match start ───────────────────────────────────
+  match_countdown_start: "&eMatch starts in &f%time%s&e."
+  match_countdown_cancelled: "&cCountdown cancelled: not enough players."
+  match_starting_actionbar: "&7Starting in: &e%time%s"
+  match_starting_chat: "&7Starting in: &e%time%"
+  match_started_title: "&aMatch Started"
+  match_started_subtitle: "&7Good luck"
+  match_started_broadcast: "&aThe combat has started."
+  match_team_assigned: "&7You were assigned to team %team%&7."
+
+  # ── During combat ─────────────────────────────────────────────
+  match_player_eliminated: "&c%player% &7was eliminated."
+  match_player_left_lose: "&c%player% &7left the combat and loses."
+  match_draw_broadcast: "&cTime is over. Duel ends in a draw."
+
+  # ── Match end ─────────────────────────────────────────────────
+  match_ended_broadcast: "&aThe combat has ended."
+  match_winner_broadcast: "&eWinner: &a%winner%"
+  match_winner_duel_broadcast: "&a%winner% &fdefeated &c%loser%&f."
+  match_winner_team_broadcast: "&a%winner_team% &fdefeated &c%loser_team%&f."
+  match_win_title: "&6&lVICTORY"
+  match_win_subtitle: "&fYou won in &e%room%"
+  match_lose_title: "&c&lDEFEAT"
+  match_lose_subtitle: "&7Winner: &f%winner%"
+
+  # ── Stats ─────────────────────────────────────────────────────
+  stats_header: "&8&m----------------------------------------"
+  stats_title: "&6&lYour Statistics"
+  stats_normal: "&eNormal: &a%wins% &7wins / &c%losses% &7losses"
+  stats_clan: "&6Clan: &a%wins% &7wins / &c%losses% &7losses"
+  stats_footer: "&8&m----------------------------------------"
+
+  # ── CLAN rooms ────────────────────────────────────────────────
+  clan_only_room: "&cThis room is not CLAN type."
+  clan_system_disabled: "&cNo clan plugin is enabled."
+  no_clan: "&cYou need a clan to play in this room."
+  clan_room_two_clans_only: "&cThis room only allows two clans per match."
+  clan_team_full: "&cClan &6%clan% &chas already reached its slot limit (&f%limit%&c)."
+  clan_invalid_composition: "&cInvalid CLAN composition: exact balanced clan slots are required to start."
+  clan_challenge: "&eClan &6%clan1% &ehas started a challenge in &c%room%&e. Use &b/zmrooms join %room%&e."
+  clan_only_leader_start: "&cOnly clan leader can start a CLAN duel."
+  clan_not_enough_members: "&cNot enough fighters. Required: &f%required%&c, clan: &f%own%&c, allies: &f%allys%&c."
+  clan_lobby_started: "&aCLAN challenge started in &f%room%&a by &6%clan%&a."
+  clan_lobby_already_open: "&cThere is already an open CLAN challenge in &f%room%&c."
+  clan_lobby_missing: "&cThere is no active CLAN challenge for this room."
+  clan_waiting_enemy_accept: "&eNo enemy clan confirmed yet. Use /zmrooms invite."
+  clan_only_owner_manage: "&cOnly the player who started can manage this challenge."
+  clan_enemy_already_selected: "&cEnemy clan already selected: &6%clan%&c."
+  clan_cannot_invite_self: "&cYou cannot invite your own clan."
+  clan_invite_broadcast: "&eClan &6%owner_clan% &einvited clan &6%target_clan% &ein room &f%room%&e."
+  clan_invite_sent: "&aInvitation sent to clan &6%target_clan% &afor room &f%room%&a."
+  clan_invite_notify: "&eYour clan was invited to a duel in &f%room%&e. Use &b/zmr accept %room%"
+  clan_not_invited: "&cYour clan was not invited to this duel."
+  clan_enemy_selected: "&aEnemy clan for &f%room% &ais now &6%clan%&a."
+  clan_lobby_cancelled_owner: "&cCLAN challenge in &f%room% &cwas cancelled by owner."
+  clan_lobby_cancelled_timeout: "&cCLAN challenge in &f%room% &ccancelled after 1 minute without accept."
+  clan_match_winner_broadcast: "&eWinning clan: &6%clan% &7(lead by &f%winner%&7)"
+  clan_match_result_broadcast: "&6%winner_clan% &fdefeated &c%loser_clan% &fin room &e%room%&f."
+
+  # ── Spectator ─────────────────────────────────────────────────
+  spectate_joined: "&aYou are now spectating room &f%room%&a."
+  spectate_left: "&aYou have left spectator mode."
+  spectate_not_in_mode: "&cYou are not in spectator mode."
+  spectate_spawn_missing: "&cThis room has no spectator spawn configured."
+  spectate_room_not_active: "&cYou can only spectate rooms in STARTING/PLAYING."
+  spectate_cannot_leave: "&cYou cannot leave the region while spectating."
+
+  # ── Death prompt ──────────────────────────────────────────────
+  death_spectate_prompt: "&eYou died. Use &f/zmrooms spectate %room%&e to watch or &f/zmrooms leave&e to exit."
+
+  # ── Bets ──────────────────────────────────────────────────────
+  bets_disabled_global: "&cBets are globally disabled."
+  bets_coming_soon: "&eBets will be available soon."
+  bets_disabled_room: "&cBets are disabled in this room."
+  bets_room_not_active: "&cYou can only bet while a match is starting or active."
+  bets_self_forbidden: "&cYou cannot bet in a room where you are playing."
+  bets_not_enough_players: "&cNot enough players to place bets."
+  bets_items_disabled: "&cItem betting is temporarily disabled for safety."
+  bets_selection_saved: "&aBet selection saved."
+
+  # ── Admin / setup ─────────────────────────────────────────────
+  set_pos_success: "&aTeam &f%team% &aspawn saved for &f%room%&a."
+  set_spectate_success: "&aSpectator spawn saved for &f%room%&a."
+  setspawn_success: "&aGlobal return spawn has been set."
+  reload_success: "&aConfiguration, rooms and languages reloaded."
+  setup_hint: "&eConfigure this room using: &f/zmrooms pos1 %room%&e, &f/zmrooms pos2 %room%&e, &f/zmrooms setspectate %room%&e."
+
+  save_success: "&aSaved &f%mode% &afor &f%room%&a. Detected gaps: &e%detected%&a."
+  save_room_required: "&cYou must specify a room or be editing/inside one."
+  wg_required: "&cWorldGuard is required for this save mode."
+  wg_region_not_found: "&cWorldGuard region &f%room% &cwas not found in this world."
+  wg_region_linked: "&7Linked region: &a%room%"
+
+  # ── Debug ─────────────────────────────────────────────────────
+  debug_force_success: "&aForced start executed for room %room%."
+  debug_addbot_success: "&aTest player &f%player% &aadded to room &f%room%&a."
+  debug_addbot_failed: "&cCould not add &f%player% &cto room &f%room%&c."
+
+  # ── Command usage ─────────────────────────────────────────────
+  invalid_amount: "&cAmount must be a valid number (example: 2 or 2v2)."
+  usage_create: "&cUsage: /zmrooms create <name> <NORMAL|CLAN>"
+  usage_delete: "&cUsage: /zmrooms delete <name>"
+  usage_join: "&cUsage: /zmrooms join <name>"
+  usage_bet: "&cUsage: /zmrooms bet <name>"
+  usage_start: "&cUsage: /zmrooms start <room>"
+  usage_invite: "&cUsage: /zmrooms invite <room> <clan>"
+  usage_accept: "&cUsage: /zmrooms accept <room>"
+  usage_stop: "&cUsage: /zmrooms stop <room>"
+  usage_debug: "&cUsage: /zmrooms debug <forcestart|addbot> <room> [player]"
+  usage_save: "&cUsage: /zmrooms save <positions|arena|all> [room]"
+  usage_pos: "&cUsage: /zmrooms pos1 <room> or /zmrooms pos2 <room>"
+  usage_setspectate: "&cUsage: /zmrooms setspectate <room>"
+  usage_spectate: "&cUsage: /zmrooms spectate <room|leave>"
+  usage_reload: "&cUsage: /zmrooms reload"
+
+  # ── Help menu ─────────────────────────────────────────────────
+  help_header: "&8&m----------------------------------------"
+  help_title: "&c&lzMPvPRooms &7- Help"
+  help_create: "&e/zmrooms create <name> <type> &7- Create room"
+  help_delete: "&e/zmrooms delete <name> &7- Delete room"
+  help_edit: "&e/zmrooms edit [name] &7- Edit rooms"
+  help_pos1: "&e/zmrooms pos1 <room> &7- Save team 1 spawn"
+  help_pos2: "&e/zmrooms pos2 <room> &7- Save team 2 spawn"
+  help_setspectate: "&e/zmrooms setspectate <room> &7- Save spectator spawn"
+  help_setspawn: "&e/zmrooms setspawn &7- Save global return spawn"
+  help_save: "&e/zmrooms save <positions|arena|all> [room] &7- Save/sync room setup"
+  help_reload: "&e/zmrooms reload &7- Reload config.yml, rooms.yml and lang"
+  help_start: "&e/zmrooms start <room> &7- Start CLAN lobby"
+  help_invite: "&e/zmrooms invite <room> <clan> &7- Invite a clan"
+  help_accept: "&e/zmrooms accept <room> &7- Accept clan invite"
+  help_stop: "&e/zmrooms stop <room> &7- Cancel CLAN lobby"
+  help_leave: "&e/zmrooms leave &7- Leave room manually"
+  help_spectate: "&e/zmrooms spectate <room|leave> &7- Enter/leave spectator mode"
+  help_join: "&e/zmrooms join <name> &7- Join room"
+  help_bet: "&e/zmrooms bet <name> &7- Open betting menu"
+  help_stats: "&e/zmrooms stats &7- View stats"
+  help_footer: "&8&m----------------------------------------"
+
+# ----------------------------------------------------------------
+# GUIs
+# ----------------------------------------------------------------
+guis:
+  rooms_list_title: "&8Rooms List"
+  rooms_list_close_name: "&fClose &8→ &#FF5018&lEXIT"
+  rooms_list_close_lore:
+    - ""
+    - " &#FF5018&l| &fClose this menu"
+    - ""
+    - "&#FF5018■ Click to exit"
+
+  room_menu_title: "&8Room &7| &d%room%"
+  editor_title: "&8Editing &7| &d%room%"
+  room_item_name: "&fRoom &8→ &#FF5018&l%room%"
+  room_item_lore:
+    - ""
+    - " &#FF5018&l| &fType: &b%type%"
+    - " &#FF5018&l| &fState: &d%state%"
+    - ""
+    - "&#FF5018■ Click to manage"
+
+  menu_config_name: "&fSettings &8→ &#FF5018&lEDIT"
+  menu_config_lore:
+    - ""
+    - " &#FF5018&l| &fEdit room settings"
+    - ""
+    - "&#FF5018■ Click to open"
+
+  menu_info_name: "&fInformation &8→ &#FF5018&lVIEW"
+  menu_info_lore:
+    - ""
+    - " &#FF5018&l| &fState: &d%state%"
+    - " &#FF5018&l| &fPlayers: &b%players%&7/&b%capacity%"
+    - " &#FF5018&l| &fMinimum: &d%min_players%"
+    - ""
+    - " &#FF5018&l| &fConfigured: %configured%"
+    - " &#FF5018&l| &fRegion: &7%region%"
+    - " &#FF5018&l| &fArena: %arena%"
+    - " &#FF5018&l| &fSpawn 1: %spawn1%"
+    - " &#FF5018&l| &fSpawn 2: %spawn2%"
+    - " &#FF5018&l| &fSpectator: %spectator%"
+    - ""
+    - " &#FF5018&l| &fGaps: &e%entries%"
+
+  menu_tp_name: "&fTeleport &8→ &#FF5018&lGO"
+  menu_tp_lore:
+    - ""
+    - " &#FF5018&l| &fGo to spectator spawn"
+    - ""
+    - "&#FF5018■ Click to teleport"
+
+  menu_back_name: "&fBack &8→ &#FF5018&lRETURN"
+  menu_back_lore:
+    - ""
+    - " &#FF5018&l| &fReturn to previous menu"
+    - ""
+    - "&#FF5018■ Click to go back"
+
+  editor_type_name: "&fRoom Type &8→ &#FF5018&lCHANGE"
+  editor_type_lore:
+    - ""
+    - " &#FF5018&l| &fCurrent: &b%type%"
+    - ""
+    - "&#FF5018■ Click to switch"
+
+  editor_keepinv_name: "&fKeep Inventory &8→ &#FF5018&lTOGGLE"
+  editor_keepinv_lore:
+    - ""
+    - " &#FF5018&l| &fState: %status%"
+    - " &#FF5018&l| &7Also enables Keep EXP"
+    - ""
+    - "&#FF5018■ Click to toggle"
+
+  editor_posttime_name: "&fWinners Delay &8→ &#FF5018&lEDIT"
+  editor_posttime_lore:
+    - ""
+    - " &#FF5018&l| &fCurrent: &b%time%"
+    - ""
+    - "&#FF5018■ Left +2s / Right -2s"
+
+  editor_doors_name: "&fDoor Material &8→ &#FF5018&lCHANGE"
+  editor_doors_lore:
+    - ""
+    - " &#FF5018&l| &fCurrent: &b%material%"
+    - ""
+    - "&#FF5018■ Click to change"
+
+  editor_teamsize_name: "&fTeam Size &8→ &#FF5018&lEDIT"
+  editor_teamsize_lore:
+    - ""
+    - " &#FF5018&l| &fCurrent: &b%size%v%size%"
+    - " &#FF5018&l| &fCapacity: &f%capacity%"
+    - ""
+    - " &#FF5018&l| &fLeft Click &8→ &#FF5018+1"
+    - " &#FF5018&l| &fRight Click &8→ &#FF5018-1"
+
+  editor_minplayers_name: "&fStart Minimum &8→ &#FF5018&lEDIT"
+  editor_minplayers_lore:
+    - ""
+    - " &#FF5018&l| &fCurrent: &b%min_players%"
+    - " &#FF5018&l| &fMaximum: &f%capacity%"
+    - ""
+    - " &#FF5018&l| &fLeft Click &8→ &#FF5018+2"
+    - " &#FF5018&l| &fRight Click &8→ &#FF5018-2"
+
+  editor_delay_name: "&fStart Delay &8→ &#FF5018&lEDIT"
+  editor_delay_lore:
+    - ""
+    - " &#FF5018&l| &fCurrent: &b%delay%s"
+    - ""
+    - " &#FF5018&l| &fLeft Click &8→ &#FF5018+5s"
+    - " &#FF5018&l| &fRight Click &8→ &#FF5018-5s"
+
+  editor_action_name: "&fChannels &8→ &#FF5018&lCONFIG"
+  editor_action_lore:
+    - ""
+    - " &#FF5018&l| &fTitles: %titles%"
+    - " &#FF5018&l| &fActionBar: %actionbar%"
+    - " &#FF5018&l| &fChat: %chat%"
+    - ""
+    - " &#FF5018&l| &fLeft &8→ &#FF5018Titles"
+    - " &#FF5018&l| &fRight &8→ &#FF5018ActionBar"
+    - " &#FF5018&l| &fShift+Click &8→ &#FF5018Chat"
+
+  editor_bet_name: "&fBet Mode &8→ &#FF5018&lCHANGE"
+  editor_bet_lore:
+    - ""
+    - " &#FF5018&l| &fCurrent: &b%mode%"
+    - ""
+    - "&#FF5018■ Click to toggle"
+
+  editor_maxtime_name: "&fMax Time &8→ &#FF5018&lCHANGE"
+  editor_maxtime_lore:
+    - ""
+    - " &#FF5018&l| &fCurrent: &b%time%"
+    - ""
+    - "&#FF5018■ Click to rotate"
+
+  editor_back_name: "&fBack &8→ &#FF5018&lRETURN"
+  editor_back_lore:
+    - ""
+    - " &#FF5018&l| &fReturn to room menu"
+    - ""
+    - "&#FF5018■ Click to return"

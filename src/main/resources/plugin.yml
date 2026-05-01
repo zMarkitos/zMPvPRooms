@@ -1,0 +1,32 @@
+name: zMPvPRooms
+version: '@project.version@'
+main: dev.zm.pvprooms.ZMPvPRooms
+api-version: '1.19'
+authors: [ zMarkitos_ ]
+description: A complete and optimized PvP rooms system
+
+depend: []
+softdepend: [PlaceholderAPI, Vault, uClans, WorldGuard]
+
+commands:
+  zmrooms:
+    description: Main command for zMPvPRooms
+    aliases: [zmr, pvprooms, rooms]
+    permission: zmrooms.use
+
+permissions:
+  zmrooms.admin:
+    description: Full access to the plugin
+    default: op
+  zmrooms.create:
+    description: Allows creating rooms
+    default: op
+  zmrooms.use:
+    description: Allows joining and using rooms
+    default: true
+  zmrooms.bet:
+    description: Allows betting in rooms
+    default: true
+  zmrooms.stats:
+    description: Allows viewing stats
+    default: true
