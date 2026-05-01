@@ -48,6 +48,14 @@ public final class ZMPvPRooms extends JavaPlugin {
     private WorldGuardHook worldGuardHook;
     private VersionChecker versionChecker;
 
+    private void log(String message) {
+        getServer().getConsoleSender().sendMessage(color(message));
+    }
+
+    private String color(String text) {
+        return org.bukkit.ChatColor.translateAlternateColorCodes('&', text);
+    }
+
     @Override
     public void onEnable() {
         instance = this;
@@ -60,20 +68,38 @@ public final class ZMPvPRooms extends JavaPlugin {
         registerListeners();
         setupIntegrations();
 
-        // Schedule one-tick-delayed cleanup for any room that still has
-        // players registered from a previous session that crashed/restarted.
         getServer().getScheduler().runTask(this, this::recoverInterruptedSessions);
 
         versionChecker = new VersionChecker(this);
         versionChecker.refresh();
 
-        getLogger().log(Level.INFO, "zMPvPRooms enabled in {0}ms.", System.currentTimeMillis() - start);
+        long time = System.currentTimeMillis() - start;
+
+        log("&7&m----------------------------------------");
+        log("&c&lzMPvPRooms &7v" + getDescription().getVersion());
+        log("&7");
+        if (database != null) log("&7• &fSQLite: &aConnected");
+        if (getServer().getPluginManager().getPlugin("PlaceholderAPI") != null) log("&7• &fPlaceholderAPI: &aHooked");
+        else log("&7• &fPlaceholderAPI: &cNot found");
+        
+        if (getServer().getPluginManager().getPlugin("Vault") != null) log("&7• &fVault: &aHooked");
+        else log("&7• &fVault: &cNot found");
+        
+        if (clanProvider != null) log("&7• &fClan Hook: &a" + clanProvider.getProviderName());
+        else log("&7• &fClan Hook: &cNone");
+        
+        if (worldGuardHook != null) log("&7• &fWorldGuard: &aHooked");
+        else log("&7• &fWorldGuard: &cNot found");
+        
+        log("&7");
+        log("&a✔ &fPlugin enabled successfully &7(" + time + "ms)");
+        log("&7• &fRooms loaded: &c" + roomManager.getRooms().size());
+        log("&7&m----------------------------------------");
     }
 
     @Override
     public void onDisable() {
-        // Abort all active matches before shutdown so players are not left
-        // stranded in an arena with no running task to clean them up.
+
         if (matchManager != null && roomManager != null) {
             for (Room room : roomManager.getRooms().values()) {
                 if (room.getState() == RoomState.PLAYING
@@ -91,6 +117,8 @@ public final class ZMPvPRooms extends JavaPlugin {
         if (database != null) {
             database.close();
         }
+
+        log("&c✘ &fPlugin disabled.");
     }
 
     private void loadConfigurations() {
@@ -102,7 +130,6 @@ public final class ZMPvPRooms extends JavaPlugin {
     private void setupDatabase() {
         if (getConfig().getBoolean("settings.use-sqlite", true)) {
             database = new SQLiteDatabase(this);
-            getLogger().info("SQLite connected.");
         }
     }
 
@@ -171,7 +198,8 @@ public final class ZMPvPRooms extends JavaPlugin {
     }
 
     private void setupPlaceholderHook() {
-        if (!getConfig().getBoolean("hooks.placeholderapi", true)) return;
+        if (!getConfig().getBoolean("hooks.placeholderapi", true))
+            return;
 
         if (getServer().getPluginManager().getPlugin("PlaceholderAPI") != null) {
             new RoomsPlaceholderExpansion(this, "rooms").register();
@@ -185,17 +213,13 @@ public final class ZMPvPRooms extends JavaPlugin {
     }
 
     private void setupVaultHook() {
-        if (!getConfig().getBoolean("hooks.vault", true)) return;
-
-        if (getServer().getPluginManager().getPlugin("Vault") != null) {
-            getLogger().info("Vault hooked.");
-        } else {
-            getLogger().warning("Vault not found.");
-        }
+        if (!getConfig().getBoolean("hooks.vault", true))
+            return;
     }
 
     private void setupClanHook() {
-        if (!getConfig().getBoolean("hooks.clans.enabled", true)) return;
+        if (!getConfig().getBoolean("hooks.clans.enabled", true))
+            return;
 
         List<String> priority = getConfig().getStringList("hooks.clans.provider-priority");
         if (priority.isEmpty()) {
@@ -206,31 +230,28 @@ public final class ZMPvPRooms extends JavaPlugin {
             ClanProvider provider = tryLoadProvider(providerName);
             if (provider != null) {
                 clanProvider = provider;
-                getLogger().info("Clan hook active: " + provider.getProviderName());
                 return;
             }
         }
-
-        getLogger().warning("No compatible clan plugin found.");
     }
 
     private void setupWorldGuardHook() {
-        if (!getConfig().getBoolean("hooks.worldguard", true)) return;
+        if (!getConfig().getBoolean("hooks.worldguard", true))
+            return;
 
         Plugin wg = getServer().getPluginManager().getPlugin("WorldGuard");
         if (wg == null || !wg.isEnabled()) {
-            getLogger().warning("WorldGuard not found. Auto-entrance detection unavailable.");
             return;
         }
 
         worldGuardHook = new WorldGuardHook();
-        getLogger().info("WorldGuard hooked.");
     }
 
     private ClanProvider tryLoadProvider(String providerName) {
         String key = providerName.toLowerCase(java.util.Locale.ROOT);
         if (key.equals("ultimateclans") || key.equals("uclans") || key.equals("uclansapi")) {
-            if (!getConfig().getBoolean("hooks.clans.ultimateclans", true)) return null;
+            if (!getConfig().getBoolean("hooks.clans.ultimateclans", true))
+                return null;
             return loadUClansProvider();
         }
         return null;
@@ -241,7 +262,8 @@ public final class ZMPvPRooms extends JavaPlugin {
         if (plugin == null) {
             plugin = findPluginByMainClass("me.ulrich.clans.Clans");
         }
-        if (plugin == null || !plugin.isEnabled()) return null;
+        if (plugin == null || !plugin.isEnabled())
+            return null;
 
         UClans api;
         if (plugin instanceof UClans) {
@@ -265,33 +287,64 @@ public final class ZMPvPRooms extends JavaPlugin {
     private Plugin findFirstEnabledPlugin(String... names) {
         for (String name : names) {
             Plugin p = getServer().getPluginManager().getPlugin(name);
-            if (p != null && p.isEnabled()) return p;
+            if (p != null && p.isEnabled())
+                return p;
         }
         return null;
     }
 
     private Plugin findPluginByMainClass(String mainClass) {
         for (Plugin p : getServer().getPluginManager().getPlugins()) {
-            if (p == null || !p.isEnabled()) continue;
+            if (p == null || !p.isEnabled())
+                continue;
             PluginDescriptionFile desc = p.getDescription();
-            if (desc != null && mainClass.equalsIgnoreCase(desc.getMain())) return p;
+            if (desc != null && mainClass.equalsIgnoreCase(desc.getMain()))
+                return p;
         }
         return null;
     }
 
     // ---- Accessors ----
 
-    public static ZMPvPRooms getInstance() { return instance; }
+    public static ZMPvPRooms getInstance() {
+        return instance;
+    }
 
-    public ConfigManager getConfigManager()   { return configManager; }
-    public RoomManager getRoomManager()       { return roomManager; }
-    public SQLiteDatabase getDatabase()       { return database; }
-    public MatchManager getMatchManager()     { return matchManager; }
-    public BetManager getBetManager()         { return betManager; }
-    public EditorManager getEditorManager()   { return editorManager; }
-    public ClanProvider getClanProvider()     { return clanProvider; }
-    public WorldGuardHook getWorldGuardHook() { return worldGuardHook; }
-    public VersionChecker getVersionChecker() { return versionChecker; }
+    public ConfigManager getConfigManager() {
+        return configManager;
+    }
+
+    public RoomManager getRoomManager() {
+        return roomManager;
+    }
+
+    public SQLiteDatabase getDatabase() {
+        return database;
+    }
+
+    public MatchManager getMatchManager() {
+        return matchManager;
+    }
+
+    public BetManager getBetManager() {
+        return betManager;
+    }
+
+    public EditorManager getEditorManager() {
+        return editorManager;
+    }
+
+    public ClanProvider getClanProvider() {
+        return clanProvider;
+    }
+
+    public WorldGuardHook getWorldGuardHook() {
+        return worldGuardHook;
+    }
+
+    public VersionChecker getVersionChecker() {
+        return versionChecker;
+    }
 
     public void reloadAll() {
         reloadConfig();
@@ -311,7 +364,8 @@ public final class ZMPvPRooms extends JavaPlugin {
      * survives server restarts regardless of how config is loaded.
      */
     public void setReturnSpawn(Location location) {
-        if (location == null || location.getWorld() == null) return;
+        if (location == null || location.getWorld() == null)
+            return;
         getConfig().set("settings.return-spawn", location);
         // saveConfig(); // Removed to prevent Bukkit from stripping config.yml comments
         if (database != null) {
@@ -327,11 +381,13 @@ public final class ZMPvPRooms extends JavaPlugin {
     public Location getReturnSpawn() {
         if (database != null) {
             Location fromDb = deserializeLocation(database.getSetting("return_spawn"));
-            if (fromDb != null && fromDb.getWorld() != null) return fromDb;
+            if (fromDb != null && fromDb.getWorld() != null)
+                return fromDb;
         }
 
         Location configured = getConfig().getLocation("settings.return-spawn");
-        if (configured != null && configured.getWorld() != null) return configured;
+        if (configured != null && configured.getWorld() != null)
+            return configured;
 
         return getServer().getWorlds().get(0).getSpawnLocation();
     }
@@ -342,15 +398,18 @@ public final class ZMPvPRooms extends JavaPlugin {
     }
 
     private Location deserializeLocation(String raw) {
-        if (raw == null || raw.isEmpty()) return null;
+        if (raw == null || raw.isEmpty())
+            return null;
         String[] p = raw.split(";");
-        if (p.length != 6) return null;
+        if (p.length != 6)
+            return null;
         World world = getServer().getWorld(p[0]);
-        if (world == null) return null;
+        if (world == null)
+            return null;
         try {
             return new Location(world,
                     Double.parseDouble(p[1]), Double.parseDouble(p[2]), Double.parseDouble(p[3]),
-                    Float.parseFloat(p[4]),   Float.parseFloat(p[5]));
+                    Float.parseFloat(p[4]), Float.parseFloat(p[5]));
         } catch (NumberFormatException ignored) {
             return null;
         }
