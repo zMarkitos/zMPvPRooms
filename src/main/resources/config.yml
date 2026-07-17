@@ -8,7 +8,7 @@
 # ================================================================
 # Do not modify this value, it is used to check for config updates.
 # ================================================================
-config-version: 1.0
+config-version: 1.1
 
 settings:
   # Message language. Folder: /plugins/zMPvPRooms/lang/
@@ -16,7 +16,8 @@ settings:
   language: "EN"
 
   # Enables the betting module and its GUIs.
-  # false = /zmrooms bet will show "coming soon".
+  # false = /zmrooms bet will show "disabled" message.
+  # true  = players can bet on any player inside an active room.
   bets-enabled: false
 
   # Enables SQLite database for player statistics.
@@ -221,3 +222,28 @@ clan-join-effects:
     name: "BLOCK_BEACON_ACTIVATE"
     volume: 1.0
     pitch: 1.15
+
+# ================================================================
+# Bet rewards & penalties
+# ================================================================
+# Commands are run from the CONSOLE when a bet is resolved.
+# Only supported placeholder: {player} → name of the better.
+# You can use any economy plugin command (Vault-based, Treasury,
+# custom shop plugins, etc.) since rewards are purely command-based.
+#
+# Example with EssentialsX economy:
+#   win-commands:  ["eco give {player} 500"]
+#   lose-commands: ["eco take {player} 500"]
+#
+# Example with A economy:
+#   win-commands:  ["cmi money give {player} 500"]
+#   lose-commands: ["cmi money take {player} 500"]
+#
+# Leave either list empty ([]) to apply no reward or no penalty.
+# ================================================================
+bets:
+  win-commands:
+    - "eco give {player} 500"
+
+  lose-commands:
+    - "eco take {player} 500"

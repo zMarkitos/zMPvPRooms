@@ -28,11 +28,10 @@ public class SQLiteDatabase {
         connect();
         applyPragmas();
         createTables();
+        runMigrations();
     }
 
-    // -------------------------------------------------------------------------
     // Connection management
-    // -------------------------------------------------------------------------
 
     private void connect() {
         File dbFile = new File(plugin.getDataFolder(), "database.db");
@@ -86,9 +85,7 @@ public class SQLiteDatabase {
         }
     }
 
-    // -------------------------------------------------------------------------
     // Schema
-    // -------------------------------------------------------------------------
 
     private void createTables() {
         String playerStats =
@@ -136,9 +133,63 @@ public class SQLiteDatabase {
         }
     }
 
-    // -------------------------------------------------------------------------
+    // Migration system
+
+    /**
+     * Current schema version. Increment this constant and add a migration block
+     * in {@link #runMigrations()} whenever a structural change is needed.
+     */
+    private static final int CURRENT_SCHEMA_VERSION = 2;
+
+    /**
+     * Runs all pending migrations in order. Safe to call on every startup:
+     * already-applied migrations are skipped. Existing data is never lost.
+     */
+    private void runMigrations() {
+        int current = 0;
+        String raw = getSetting("db_schema_version");
+        if (raw != null) {
+            try { current = Integer.parseInt(raw); } catch (NumberFormatException ignored) {}
+        }
+
+        if (current >= CURRENT_SCHEMA_VERSION) {
+            return; // Already up-to-date
+        }
+
+        plugin.getLogger().info("[DB] Schema version " + current
+                + " detected, migrating to v" + CURRENT_SCHEMA_VERSION + "...");
+
+        // v1 → v2: Add player_bets table
+        if (current < 2) {
+            applyMigration(2, "CREATE TABLE IF NOT EXISTS player_bets (" +
+                    "  id            INTEGER PRIMARY KEY AUTOINCREMENT," +
+                    "  better_uuid   VARCHAR(36) NOT NULL," +
+                    "  better_name   VARCHAR(16)," +
+                    "  target_uuid   VARCHAR(36) NOT NULL," +
+                    "  room_name     VARCHAR(64) NOT NULL," +
+                    "  placed_at     INTEGER NOT NULL" +
+                    ");");
+            applyMigration(2, "CREATE INDEX IF NOT EXISTS idx_bets_room ON player_bets(room_name);");
+        }
+
+        // Save updated version
+        setSetting("db_schema_version", String.valueOf(CURRENT_SCHEMA_VERSION));
+        plugin.getLogger().info("[DB] Migration complete. Schema is now v" + CURRENT_SCHEMA_VERSION + ".");
+    }
+
+    /**
+     * Executes a single DDL statement as part of a migration.
+     * Errors are logged but do not stop the migration chain.
+     */
+    private void applyMigration(int version, String ddl) {
+        try (Statement st = getConnection().createStatement()) {
+            st.execute(ddl);
+        } catch (SQLException e) {
+            plugin.getLogger().warning("[DB] Migration v" + version + " DDL failed: " + e.getMessage());
+        }
+    }
+
     // Atomic stat operations (UPSERT pattern — thread-safe with WAL)
-    // -------------------------------------------------------------------------
 
     /**
      * Ensures the player row exists, then atomically increments a single stat
@@ -230,9 +281,7 @@ public class SQLiteDatabase {
         setStat(uuid, playerName, "streak", 0);
     }
 
-    // -------------------------------------------------------------------------
     // Leaderboard queries
-    // -------------------------------------------------------------------------
 
     /**
      * Returns up to {@code limit} entries ordered by {@code column} descending.
@@ -259,9 +308,7 @@ public class SQLiteDatabase {
         return result;
     }
 
-    // -------------------------------------------------------------------------
     // Personal stats query
-    // -------------------------------------------------------------------------
 
     /**
      * Loads a complete stat row for the given UUID, or a zeroed snapshot if
@@ -294,9 +341,7 @@ public class SQLiteDatabase {
         return row;
     }
 
-    // -------------------------------------------------------------------------
     // Plugin settings
-    // -------------------------------------------------------------------------
 
     public void setSetting(String key, String value) {
         if (key == null || key.trim().isEmpty()) return;
@@ -326,9 +371,77 @@ public class SQLiteDatabase {
         return null;
     }
 
-    // -------------------------------------------------------------------------
+    // Bet persistence
+
+    /**
+     * Saves a bet record. Called when a player confirms their bet.
+     *
+     * @param betterUuid UUID of the player who placed the bet
+     * @param betterName Display name of the better (kept for record)
+     * @param targetUuid UUID of the player being bet on
+     * @param roomName   Name of the room where the match is taking place
+     */
+    public void saveBet(String betterUuid, String betterName, String targetUuid, String roomName) {
+        if (betterUuid == null || targetUuid == null || roomName == null) return;
+        String query = "INSERT INTO player_bets (better_uuid, better_name, target_uuid, room_name, placed_at)" +
+                " VALUES (?, ?, ?, ?, ?)";
+        try (PreparedStatement ps = getConnection().prepareStatement(query)) {
+            ps.setString(1, betterUuid);
+            ps.setString(2, betterName != null ? betterName : "Unknown");
+            ps.setString(3, targetUuid);
+            ps.setString(4, roomName.toLowerCase());
+            ps.setLong(5, System.currentTimeMillis());
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            plugin.getLogger().warning("Could not save bet: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Returns all active bet records for the given room.
+     *
+     * @param roomName Name of the room
+     * @return List of {@link BetRow} objects
+     */
+    public List<BetRow> getBetsByRoom(String roomName) {
+        List<BetRow> result = new ArrayList<>();
+        if (roomName == null) return result;
+        String query = "SELECT id, better_uuid, better_name, target_uuid FROM player_bets WHERE room_name = ?";
+        try (PreparedStatement ps = getConnection().prepareStatement(query)) {
+            ps.setString(1, roomName.toLowerCase());
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    BetRow row = new BetRow();
+                    row.id          = rs.getLong("id");
+                    row.betterUuid  = rs.getString("better_uuid");
+                    row.betterName  = rs.getString("better_name");
+                    row.targetUuid  = rs.getString("target_uuid");
+                    result.add(row);
+                }
+            }
+        } catch (SQLException e) {
+            plugin.getLogger().warning("Could not load bets for room '" + roomName + "': " + e.getMessage());
+        }
+        return result;
+    }
+
+    /**
+     * Removes all bet records for a room once the match has concluded.
+     *
+     * @param roomName Name of the room
+     */
+    public void removeBetsByRoom(String roomName) {
+        if (roomName == null) return;
+        String query = "DELETE FROM player_bets WHERE room_name = ?";
+        try (PreparedStatement ps = getConnection().prepareStatement(query)) {
+            ps.setString(1, roomName.toLowerCase());
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            plugin.getLogger().warning("Could not remove bets for room '" + roomName + "': " + e.getMessage());
+        }
+    }
+
     // Helpers
-    // -------------------------------------------------------------------------
 
     private void tryRollback(Connection conn) {
         try { conn.rollback(); } catch (SQLException ignored) {}
@@ -338,9 +451,7 @@ public class SQLiteDatabase {
         try { conn.setAutoCommit(true); } catch (SQLException ignored) {}
     }
 
-    // -------------------------------------------------------------------------
     // Data transfer objects
-    // -------------------------------------------------------------------------
 
     /** A single leaderboard entry. */
     public static final class TopEntry {
@@ -364,5 +475,13 @@ public class SQLiteDatabase {
         public int clanWins;
         public int clanLosses;
         public int streak;
+    }
+
+    /** A single bet record retrieved from the database. */
+    public static final class BetRow {
+        public long   id;
+        public String betterUuid;
+        public String betterName;
+        public String targetUuid;
     }
 }

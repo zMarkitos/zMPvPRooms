@@ -361,7 +361,57 @@ public class MainCommand implements CommandExecutor {
             player.sendMessage(plugin.getConfigManager().getMessage("no_permission"));
             return;
         }
-        player.sendMessage(plugin.getConfigManager().getMessage("bets_coming_soon"));
+
+        // Global toggle
+        if (!plugin.getConfig().getBoolean("settings.bets-enabled", false)) {
+            player.sendMessage(plugin.getConfigManager().getMessage("bets_disabled_global"));
+            return;
+        }
+
+        // Room argument required
+        if (args.length < 2) {
+            player.sendMessage(plugin.getConfigManager().getMessage("usage_bet"));
+            return;
+        }
+
+        String roomName = args[1];
+        Optional<dev.zm.pvprooms.models.Room> roomOpt = roomManager.getRoom(roomName);
+        if (!roomOpt.isPresent()) {
+            player.sendMessage(plugin.getConfigManager().getMessage("room_not_found")
+                    .replace("%room%", roomName));
+            return;
+        }
+
+        dev.zm.pvprooms.models.Room room = roomOpt.get();
+
+        // Room must be active (starting or playing)
+        if (room.getState() != RoomState.STARTING && room.getState() != RoomState.PLAYING) {
+            player.sendMessage(plugin.getConfigManager().getMessage("bets_room_not_active"));
+            return;
+        }
+
+        // A participant cannot bet on their own match
+        if (room.getPlayers().contains(player.getUniqueId())) {
+            player.sendMessage(plugin.getConfigManager().getMessage("bets_self_forbidden"));
+            return;
+        }
+
+        // Need at least one player in the room to bet on
+        if (room.getPlayers().isEmpty()) {
+            player.sendMessage(plugin.getConfigManager().getMessage("bets_not_enough_players"));
+            return;
+        }
+
+        // Prevent double-betting in the same room
+        dev.zm.pvprooms.managers.BetManager.BetEntry existing =
+                plugin.getBetManager().getBetEntry(player);
+        if (existing != null && roomName.equalsIgnoreCase(existing.roomName)) {
+            player.sendMessage(plugin.getConfigManager().getMessage("bets_already_placed")
+                    .replace("%room%", roomName));
+            return;
+        }
+
+        plugin.getBetManager().openBetMenu(player, room);
     }
 
     private void handleStats(CommandSender sender) {

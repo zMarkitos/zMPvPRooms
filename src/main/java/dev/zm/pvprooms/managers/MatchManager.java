@@ -914,6 +914,9 @@ public class MatchManager {
             }
         });
 
+        // Resolve bets for this room (in-memory operation, must run on main thread)
+        plugin.getBetManager().processBetResults(room.getName(), winners, losers);
+
         if (winner == null && winners.isEmpty()) {
             Set<UUID> everyone = new HashSet<>(room.getPlayers());
             everyone.addAll(room.getSpectators());
@@ -1280,9 +1283,7 @@ public class MatchManager {
         roomTimeRemaining.remove(roomKey);
     }
 
-    // -------------------------------------------------------------------------
     // Stats helpers — all write operations delegated to SQLiteDatabase
-    // -------------------------------------------------------------------------
 
     /**
      * Increments kill/death columns for the given participants.

@@ -133,6 +133,13 @@ messages:
   bets_not_enough_players: "&cNo hay suficientes jugadores para apostar."
   bets_items_disabled: "&cLa apuesta por items esta desactivada temporalmente por seguridad."
   bets_selection_saved: "&aSeleccion de apuesta guardada."
+  bets_already_placed: "&cYa tienes una apuesta activa en la sala &f%room%&c."
+  bets_placed: "&aApuesta realizada por &e%player% &aen la sala &f%room%&a. ¡Buena suerte!"
+  bets_won: "&a¡Tu apuesta por &e%player% &agano! Recompensa aplicada."
+  bets_lost: "&cTu apuesta por &e%player% &cperdio. Mejor suerte la proxima vez."
+  bets_cancelled: "&7Tu apuesta fue cancelada (la partida termino sin un ganador claro)."
+  bets_player_not_in_room: "&cEse jugador ya no esta en la sala."
+  bets_no_room_arg: "&cUso: /zmrooms bet &f<sala>"
 
   # Admin / setup
   set_pos_success: "&aPosicion del equipo &f%team% &aguardada para &f%room%&a."

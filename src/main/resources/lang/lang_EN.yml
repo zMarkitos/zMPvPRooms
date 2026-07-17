@@ -138,6 +138,13 @@ messages:
   bets_not_enough_players: "&cNot enough players to place bets."
   bets_items_disabled: "&cItem betting is temporarily disabled for safety."
   bets_selection_saved: "&aBet selection saved."
+  bets_already_placed: "&cYou already have an active bet in room &f%room%&c."
+  bets_placed: "&aYou placed a bet on &e%player% &ain room &f%room%&a. Good luck!"
+  bets_won: "&aYour bet on &e%player% &awon! Reward applied."
+  bets_lost: "&cYour bet on &e%player% &clost. Better luck next time."
+  bets_cancelled: "&7Your bet was cancelled (match ended without a clear winner)."
+  bets_player_not_in_room: "&cThat player is no longer in the room."
+  bets_no_room_arg: "&cUsage: /zmrooms bet &f<room>"
 
   # ── Admin / setup ─────────────────────────────────────────────
   set_pos_success: "&aTeam &f%team% &aspawn saved for &f%room%&a."

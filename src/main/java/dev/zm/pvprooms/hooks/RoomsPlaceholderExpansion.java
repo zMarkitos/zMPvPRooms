@@ -63,7 +63,7 @@ public class RoomsPlaceholderExpansion extends PlaceholderExpansion {
     private final ZMPvPRooms plugin;
     private final String identifier;
 
-    // ----- Leaderboard cache (refreshed asynchronously) -----
+    //  Leaderboard cache (refreshed asynchronously) 
     /** Snapshot of leaderboard data. Replaced atomically after each async refresh. */
     private volatile Map<String, List<SQLiteDatabase.TopEntry>> topCache = new HashMap<>();
     /** Timestamp of the last completed cache refresh. */
@@ -71,7 +71,7 @@ public class RoomsPlaceholderExpansion extends PlaceholderExpansion {
     /** Guards against scheduling multiple simultaneous refreshes. */
     private volatile boolean topRefreshing = false;
 
-    // ----- Personal stats cache -----
+    //  Personal stats cache 
     /** Thread-safe map: UUID → cached snapshot. */
     private final ConcurrentHashMap<UUID, CachedStats> personalCache = new ConcurrentHashMap<>();
 
@@ -80,9 +80,7 @@ public class RoomsPlaceholderExpansion extends PlaceholderExpansion {
         this.identifier = identifier.toLowerCase(Locale.ROOT);
     }
 
-    // -------------------------------------------------------------------------
     // PlaceholderExpansion contract
-    // -------------------------------------------------------------------------
 
     @Override
     public @NotNull String getIdentifier() { return identifier; }
@@ -97,9 +95,7 @@ public class RoomsPlaceholderExpansion extends PlaceholderExpansion {
     @Override
     public boolean persist() { return true; }
 
-    // -------------------------------------------------------------------------
     // Placeholder resolution
-    // -------------------------------------------------------------------------
 
     @Override
     public String onRequest(OfflinePlayer player, @NotNull String params) {
@@ -126,7 +122,7 @@ public class RoomsPlaceholderExpansion extends PlaceholderExpansion {
                 player.isOnline() ? player.getPlayer().getName() : player.getName());
 
         switch (key) {
-            // ---- Combined totals ----
+            //  Combined totals 
             case "kills":
                 return String.valueOf(stats.normalKills + stats.clanKills);
             case "deaths":
@@ -143,7 +139,7 @@ public class RoomsPlaceholderExpansion extends PlaceholderExpansion {
                 double kdr = totalDeaths <= 0 ? totalKills : totalKills / (double) totalDeaths;
                 return String.format(Locale.US, "%.2f", kdr);
             }
-            // ---- Normal mode ----
+            //  Normal mode 
             case "mynormalkills":
                 return String.valueOf(stats.normalKills);
             case "mynormaldeaths":
@@ -152,7 +148,7 @@ public class RoomsPlaceholderExpansion extends PlaceholderExpansion {
                 return String.valueOf(stats.normalWins);
             case "mynormallosses":
                 return String.valueOf(stats.normalLosses);
-            // ---- Clan mode ----
+            //  Clan mode 
             case "myclankills":
                 return String.valueOf(stats.clanKills);
             case "myclandeaths":
@@ -166,9 +162,7 @@ public class RoomsPlaceholderExpansion extends PlaceholderExpansion {
         }
     }
 
-    // -------------------------------------------------------------------------
     // Leaderboard
-    // -------------------------------------------------------------------------
 
     /**
      * Schedules an async cache refresh if the data is stale and no refresh is
@@ -244,9 +238,7 @@ public class RoomsPlaceholderExpansion extends PlaceholderExpansion {
         return valueMode ? String.valueOf(entry.value) : entry.name;
     }
 
-    // -------------------------------------------------------------------------
     // Personal stats cache
-    // -------------------------------------------------------------------------
 
     /**
      * Returns a stat snapshot for the player, loading from DB asynchronously
@@ -281,9 +273,7 @@ public class RoomsPlaceholderExpansion extends PlaceholderExpansion {
         return stale;
     }
 
-    // -------------------------------------------------------------------------
     // Internal cache holder
-    // -------------------------------------------------------------------------
 
     private static final class CachedStats {
         final SQLiteDatabase.StatRow row;

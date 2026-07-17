@@ -5,7 +5,7 @@ import dev.zm.pvprooms.commands.MainTabCompleter;
 import dev.zm.pvprooms.database.SQLiteDatabase;
 import dev.zm.pvprooms.hooks.RoomsPlaceholderExpansion;
 import dev.zm.pvprooms.hooks.clans.ClanProvider;
-import dev.zm.pvprooms.hooks.clans.UClansProvider;
+import dev.zm.pvprooms.hooks.clans.UClansLoader;
 import dev.zm.pvprooms.hooks.worldguard.WorldGuardHook;
 import dev.zm.pvprooms.listeners.BetListener;
 import dev.zm.pvprooms.listeners.EditorListener;
@@ -17,19 +17,15 @@ import dev.zm.pvprooms.managers.MatchManager;
 import dev.zm.pvprooms.managers.RoomManager;
 import dev.zm.pvprooms.models.Room;
 import dev.zm.pvprooms.models.enums.RoomState;
-import me.ulrich.clans.Clans;
-import me.ulrich.clans.interfaces.UClans;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
-import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import dev.zm.pvprooms.utils.VersionChecker;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import java.util.logging.Level;
@@ -229,18 +225,17 @@ public final class ZMPvPRooms extends JavaPlugin {
     private void setupClanHook() {
         if (!getConfig().getBoolean("hooks.clans.enabled", true))
             return;
+        if (!getConfig().getBoolean("hooks.clans.ultimateclans", true))
+            return;
 
-        List<String> priority = getConfig().getStringList("hooks.clans.provider-priority");
-        if (priority.isEmpty()) {
-            priority = Arrays.asList("uClans", "UltimateClans");
-        }
-
-        for (String providerName : priority) {
-            ClanProvider provider = tryLoadProvider(providerName);
-            if (provider != null) {
-                clanProvider = provider;
-                return;
-            }
+        // UClansLoader is the ONLY class that imports me.ulrich.clans.* directly.
+        // Wrapping the call in NoClassDefFoundError makes UltimateClans fully optional:
+        // if the plugin is not installed the JVM never tries to resolve those classes.
+        try {
+            clanProvider = UClansLoader.tryLoad(getServer().getPluginManager(), getLogger());
+        } catch (NoClassDefFoundError ignored) {
+            // UltimateClans API classes are not on the classpath — plugin continues without clans.
+            getLogger().info("UltimateClans not found. Clan features will be disabled.");
         }
     }
 
@@ -256,64 +251,7 @@ public final class ZMPvPRooms extends JavaPlugin {
         worldGuardHook = new WorldGuardHook();
     }
 
-    private ClanProvider tryLoadProvider(String providerName) {
-        String key = providerName.toLowerCase(java.util.Locale.ROOT);
-        if (key.equals("ultimateclans") || key.equals("uclans") || key.equals("uclansapi")) {
-            if (!getConfig().getBoolean("hooks.clans.ultimateclans", true))
-                return null;
-            return loadUClansProvider();
-        }
-        return null;
-    }
-
-    private ClanProvider loadUClansProvider() {
-        Plugin plugin = findFirstEnabledPlugin("uClans", "UClans", "UltimateClans");
-        if (plugin == null) {
-            plugin = findPluginByMainClass("me.ulrich.clans.Clans");
-        }
-        if (plugin == null || !plugin.isEnabled())
-            return null;
-
-        UClans api;
-        if (plugin instanceof UClans) {
-            api = (UClans) plugin;
-        } else if (plugin instanceof Clans) {
-            api = (Clans) plugin;
-        } else {
-            getLogger().warning("UltimateClans found but does not match the expected API type.");
-            return null;
-        }
-
-        if (api.getPlayerAPI() == null) {
-            getLogger().warning("UClans PlayerAPI is null.");
-            return null;
-        }
-
-        getLogger().info("UClans hooked: " + plugin.getName());
-        return new UClansProvider(api);
-    }
-
-    private Plugin findFirstEnabledPlugin(String... names) {
-        for (String name : names) {
-            Plugin p = getServer().getPluginManager().getPlugin(name);
-            if (p != null && p.isEnabled())
-                return p;
-        }
-        return null;
-    }
-
-    private Plugin findPluginByMainClass(String mainClass) {
-        for (Plugin p : getServer().getPluginManager().getPlugins()) {
-            if (p == null || !p.isEnabled())
-                continue;
-            PluginDescriptionFile desc = p.getDescription();
-            if (desc != null && mainClass.equalsIgnoreCase(desc.getMain()))
-                return p;
-        }
-        return null;
-    }
-
-    // ---- Accessors ----
+    //  Accessors 
 
     public static ZMPvPRooms getInstance() {
         return instance;
@@ -366,7 +304,7 @@ public final class ZMPvPRooms extends JavaPlugin {
         }
     }
 
-    // ---- Return spawn (persisted in DB + config.yml) ----
+    //  Return spawn (persisted in DB + config.yml) 
 
     /**
      * Saves the return spawn to both config.yml and the database so it
