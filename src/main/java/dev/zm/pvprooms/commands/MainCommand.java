@@ -195,6 +195,10 @@ public class MainCommand implements CommandExecutor {
         String roomName = args[1];
         Optional<Room> room = roomManager.getRoom(roomName);
         if (room.isPresent()) {
+            if (!room.get().isEnabled() && !player.hasPermission("zmpvprooms.bypass.disabled")) {
+                player.sendMessage(plugin.getConfigManager().getMessage("room_disabled"));
+                return;
+            }
             if (room.get().getType() == RoomType.NORMAL) {
                 player.sendMessage(plugin.getConfigManager().getMessage("normal_auto_join"));
                 return;

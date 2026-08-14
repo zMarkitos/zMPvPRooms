@@ -14,6 +14,8 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 
 import java.io.File;
 import java.io.IOException;
@@ -56,6 +58,7 @@ public class RoomManager {
             String typeStr = section.getString(name + ".type", "NORMAL");
             RoomType type = parseEnum(RoomType.class, typeStr, RoomType.NORMAL, "room type", name);
             Room room = new Room(name, type);
+            room.setEnabled(section.getBoolean(name + ".enabled", true));
 
             room.setKeepInventory(section.getBoolean(name + ".keepInventory", false));
             room.setKeepExp(section.getBoolean(name + ".keepExp", false));
@@ -80,6 +83,15 @@ public class RoomManager {
             room.setSpawn2(getLocation(section, name + ".spawn2"));
             room.setSpectatorSpawn(getLocation(section, name + ".spectatorSpawn"));
 
+            // Load potion effects (stored as "TYPE:amplifier", e.g. "SPEED:1")
+            room.clearEffects();
+            for (String entry : section.getStringList(name + ".effects")) {
+                PotionEffect effect = deserializeEffect(entry, name);
+                if (effect != null) {
+                    room.addEffect(effect);
+                }
+            }
+
             // Backward compatibility with old saved coordinates.
             Location legacyArenaPos1 = getLocation(section, name + ".arenaPos1");
             Location legacyArenaPos2 = getLocation(section, name + ".arenaPos2");
@@ -102,6 +114,7 @@ public class RoomManager {
         for (Room room : rooms.values()) {
             String path = "rooms." + room.getName();
             roomsConfig.set(path + ".type", room.getType().name());
+            roomsConfig.set(path + ".enabled", room.isEnabled());
             roomsConfig.set(path + ".keepInventory", room.isKeepInventory());
             roomsConfig.set(path + ".keepExp", room.isKeepExp());
             roomsConfig.set(path + ".doorMaterial", room.getDoorMaterial().name());
@@ -123,6 +136,17 @@ public class RoomManager {
             setLocation(roomsConfig, path + ".spawn1", room.getSpawn1());
             setLocation(roomsConfig, path + ".spawn2", room.getSpawn2());
             setLocation(roomsConfig, path + ".spectatorSpawn", room.getSpectatorSpawn());
+
+            // Save potion effects as "TYPE:amplifier" strings
+            if (room.getEffects().isEmpty()) {
+                roomsConfig.set(path + ".effects", null);
+            } else {
+                List<String> effectList = new java.util.ArrayList<>();
+                for (PotionEffect effect : room.getEffects()) {
+                    effectList.add(effect.getType().getName() + ":" + effect.getAmplifier());
+                }
+                roomsConfig.set(path + ".effects", effectList);
+            }
 
             // Cleanup obsolete keys from old format.
             roomsConfig.set(path + ".arenaPos1", null);
@@ -318,5 +342,35 @@ public class RoomManager {
                     "Invalid " + label + " '" + value + "' in room '" + room + "'. Using " + fallback.name() + ".");
             return fallback;
         }
+    }
+
+    /**
+     * Parses a potion effect entry of the form "TYPE:amplifier" (e.g. "SPEED:1").
+     * Returns null and logs a warning if the entry is malformed or the type is unknown.
+     */
+    private PotionEffect deserializeEffect(String entry, String roomName) {
+        if (entry == null || entry.isEmpty()) {
+            return null;
+        }
+        String[] parts = entry.split(":", 2);
+        if (parts.length != 2) {
+            plugin.getLogger().warning("Malformed effect entry '" + entry + "' in room '" + roomName + "'. Expected TYPE:amplifier.");
+            return null;
+        }
+        PotionEffectType type = PotionEffectType.getByName(parts[0].trim().toUpperCase());
+        if (type == null) {
+            plugin.getLogger().warning("Unknown potion effect type '" + parts[0] + "' in room '" + roomName + "'. Skipping.");
+            return null;
+        }
+        int amplifier;
+        try {
+            amplifier = Integer.parseInt(parts[1].trim());
+        } catch (NumberFormatException e) {
+            plugin.getLogger().warning("Invalid amplifier '" + parts[1] + "' in room '" + roomName + "'. Skipping.");
+            return null;
+        }
+        amplifier = Math.max(0, Math.min(amplifier, 9));
+        // Duration is irrelevant at load time; RoomEffectManager will use Integer.MAX_VALUE when applying.
+        return new PotionEffect(type, Integer.MAX_VALUE, amplifier, false, true, true);
     }
 }

@@ -6,6 +6,7 @@ import dev.zm.pvprooms.database.SQLiteDatabase;
 import dev.zm.pvprooms.hooks.RoomsPlaceholderExpansion;
 import dev.zm.pvprooms.hooks.clans.ClanProvider;
 import dev.zm.pvprooms.hooks.clans.UClansLoader;
+import dev.zm.pvprooms.hooks.clans.ByteClansLoader;
 import dev.zm.pvprooms.hooks.worldguard.WorldGuardHook;
 import dev.zm.pvprooms.listeners.BetListener;
 import dev.zm.pvprooms.listeners.EditorListener;
@@ -14,9 +15,11 @@ import dev.zm.pvprooms.managers.BetManager;
 import dev.zm.pvprooms.managers.ConfigManager;
 import dev.zm.pvprooms.managers.EditorManager;
 import dev.zm.pvprooms.managers.MatchManager;
+import dev.zm.pvprooms.managers.RoomEffectManager;
 import dev.zm.pvprooms.managers.RoomManager;
 import dev.zm.pvprooms.models.Room;
 import dev.zm.pvprooms.models.enums.RoomState;
+import org.bstats.bukkit.Metrics;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.command.PluginCommand;
@@ -40,6 +43,7 @@ public final class ZMPvPRooms extends JavaPlugin {
     private MatchManager matchManager;
     private BetManager betManager;
     private EditorManager editorManager;
+    private RoomEffectManager roomEffectManager;
     private ClanProvider clanProvider;
     private WorldGuardHook worldGuardHook;
     private VersionChecker versionChecker;
@@ -55,6 +59,10 @@ public final class ZMPvPRooms extends JavaPlugin {
     @Override
     public void onEnable() {
         instance = this;
+        // bStats — must be initialized early, before any other setup.
+        // The reference is intentionally not stored; bStats manages its own lifecycle.
+        new Metrics(this, 33238);
+
         long start = System.currentTimeMillis();
 
         loadConfigurations();
@@ -123,6 +131,10 @@ public final class ZMPvPRooms extends JavaPlugin {
             database.close();
         }
 
+        if (roomEffectManager != null) {
+            roomEffectManager.clearAll();
+        }
+
         log("&c✘ &fPlugin disabled.");
     }
 
@@ -143,6 +155,7 @@ public final class ZMPvPRooms extends JavaPlugin {
         matchManager = new MatchManager(this);
         betManager = new BetManager(this);
         editorManager = new EditorManager(this);
+        roomEffectManager = new RoomEffectManager(this);
     }
 
     private void registerCommands() {
@@ -225,17 +238,25 @@ public final class ZMPvPRooms extends JavaPlugin {
     private void setupClanHook() {
         if (!getConfig().getBoolean("hooks.clans.enabled", true))
             return;
-        if (!getConfig().getBoolean("hooks.clans.ultimateclans", true))
-            return;
 
-        // UClansLoader is the ONLY class that imports me.ulrich.clans.* directly.
-        // Wrapping the call in NoClassDefFoundError makes UltimateClans fully optional:
-        // if the plugin is not installed the JVM never tries to resolve those classes.
-        try {
-            clanProvider = UClansLoader.tryLoad(getServer().getPluginManager(), getLogger());
-        } catch (NoClassDefFoundError ignored) {
-            // UltimateClans API classes are not on the classpath — plugin continues without clans.
-            getLogger().info("UltimateClans not found. Clan features will be disabled.");
+        // Try ByteClans first if enabled
+        if (getConfig().getBoolean("hooks.clans.byteclans", true)) {
+            try {
+                clanProvider = ByteClansLoader.tryLoad(getServer().getPluginManager(), getLogger());
+            } catch (NoClassDefFoundError ignored) {
+                getLogger().info("ByteClans API not found.");
+            }
+        }
+
+        // If ByteClans wasn't found or wasn't enabled, fallback to UltimateClans
+        if (clanProvider == null && getConfig().getBoolean("hooks.clans.ultimateclans", true)) {
+            try {
+                clanProvider = UClansLoader.tryLoad(getServer().getPluginManager(), getLogger());
+            } catch (NoClassDefFoundError ignored) {
+                // UltimateClans API classes are not on the classpath — plugin continues without
+                // clans.
+                getLogger().info("UltimateClans not found. Clan features will be disabled.");
+            }
         }
     }
 
@@ -251,7 +272,7 @@ public final class ZMPvPRooms extends JavaPlugin {
         worldGuardHook = new WorldGuardHook();
     }
 
-    //  Accessors 
+    // Accessors
 
     public static ZMPvPRooms getInstance() {
         return instance;
@@ -281,6 +302,10 @@ public final class ZMPvPRooms extends JavaPlugin {
         return editorManager;
     }
 
+    public RoomEffectManager getRoomEffectManager() {
+        return roomEffectManager;
+    }
+
     public ClanProvider getClanProvider() {
         return clanProvider;
     }
@@ -304,7 +329,7 @@ public final class ZMPvPRooms extends JavaPlugin {
         }
     }
 
-    //  Return spawn (persisted in DB + config.yml) 
+    // Return spawn (persisted in DB + config.yml)
 
     /**
      * Saves the return spawn to both config.yml and the database so it

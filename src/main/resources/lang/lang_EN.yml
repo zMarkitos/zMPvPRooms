@@ -16,18 +16,18 @@ general:
 
 messages:
 
-  # ── General errors ────────────────────────────────────────────
+  # General errors
   no_permission: "&cYou do not have permission to run this command."
   only_players: "&cThis command can only be used by players."
   player_not_online: "&cPlayer &f%player% &cis not online."
   stats_unavailable: "&cStats are not available right now."
-  # ── Updates ───────────────────────────────────────────────────
+  # Updates
   update_title: "&a&lUPDATE AVAILABLE"
   update_subtitle: "&7v%current_version% &8\u279c &av%latest_version%"
   update_available: "&fA new update &a(v%latest_version%) &fis available! You are running &c(v%current_version%)&f."
   update_link: "&eDownload: &n%version_url%"
 
-  # ── Room management ───────────────────────────────────────────
+  # Room management
   room_created: "&aRoom &f%room% &acreated with type &f%type%&a."
   room_already_exists: "&cRoom &f%room% &calready exists."
   room_not_found: "&cRoom &f%room% &cwas not found."
@@ -40,14 +40,15 @@ messages:
   not_in_room: "&cYou are not inside a room."
   room_world_mismatch: "&cYou must execute this command in the arena world: &f%world%"
 
-  # ── Room protection ───────────────────────────────────────────
+  # Room protection
   arena_in_use: "&cThere is an active combat in this arena."
   cannot_leave_arena: "&cYou cannot leave the arena during combat."
   room_command_blocked: "&cYou cannot use that command while you are inside a room."
   room_external_inventory_blocked: "&cYou cannot open that inventory while you are inside a room."
   normal_auto_join: "&eNORMAL rooms are joined by entering the region, not with /join."
+  room_disabled: "&cThis room is currently disabled."
 
-  # ── Join / leave feedback ─────────────────────────────────────
+  # Join / leave feedback
   match_join_welcome_title: "&6&l⚔ Entered Combat"
   match_join_welcome_subtitle: "&fRoom: &c%room%"
   match_join_actionbar: "&7Room: &e%room%"
@@ -59,7 +60,7 @@ messages:
   room_left_broadcast: "&c%player% &7left the room. &8(&e%current%&8/&e%max%&8)"
   clan_room_joined_broadcast: "&a%player% &7from clan &6%clan% &7joined room &e%room%&7. &8(&e%current%&8/&e%max%&8)"
 
-  # ── Countdown / match start ───────────────────────────────────
+  # Countdown / match start
   match_countdown_start: "&eMatch starts in &f%time%s&e."
   match_countdown_cancelled: "&cCountdown cancelled: not enough players."
   match_starting_actionbar: "&7Starting in: &e%time%s"
@@ -69,12 +70,12 @@ messages:
   match_started_broadcast: "&aThe combat has started."
   match_team_assigned: "&7You were assigned to team %team%&7."
 
-  # ── During combat ─────────────────────────────────────────────
+  # During combat
   match_player_eliminated: "&c%player% &7was eliminated."
   match_player_left_lose: "&c%player% &7left the combat and loses."
   match_draw_broadcast: "&cTime is over. Duel ends in a draw."
 
-  # ── Match end ─────────────────────────────────────────────────
+  # Match end
   match_ended_broadcast: "&aThe combat has ended."
   match_winner_broadcast: "&eWinner: &a%winner%"
   match_winner_duel_broadcast: "&a%winner% &fdefeated &c%loser%&f."
@@ -84,14 +85,14 @@ messages:
   match_lose_title: "&c&lDEFEAT"
   match_lose_subtitle: "&7Winner: &f%winner%"
 
-  # ── Stats ─────────────────────────────────────────────────────
+  # Stats
   stats_header: "&8&m----------------------------------------"
   stats_title: "&6&lYour Statistics"
   stats_normal: "&eNormal: &a%wins% &7wins / &c%losses% &7losses"
   stats_clan: "&6Clan: &a%wins% &7wins / &c%losses% &7losses"
   stats_footer: "&8&m----------------------------------------"
 
-  # ── CLAN rooms ────────────────────────────────────────────────
+  # CLAN rooms
   clan_only_room: "&cThis room is not CLAN type."
   clan_system_disabled: "&cNo clan plugin is enabled."
   no_clan: "&cYou need a clan to play in this room."
@@ -118,7 +119,7 @@ messages:
   clan_match_winner_broadcast: "&eWinning clan: &6%clan% &7(lead by &f%winner%&7)"
   clan_match_result_broadcast: "&6%winner_clan% &fdefeated &c%loser_clan% &fin room &e%room%&f."
 
-  # ── Spectator ─────────────────────────────────────────────────
+  # Spectator
   spectate_joined: "&aYou are now spectating room &f%room%&a."
   spectate_left: "&aYou have left spectator mode."
   spectate_not_in_mode: "&cYou are not in spectator mode."
@@ -126,10 +127,10 @@ messages:
   spectate_room_not_active: "&cYou can only spectate rooms in STARTING/PLAYING."
   spectate_cannot_leave: "&cYou cannot leave the region while spectating."
 
-  # ── Death prompt ──────────────────────────────────────────────
+  # Death prompt
   death_spectate_prompt: "&eYou died. Use &f/zmrooms spectate %room%&e to watch or &f/zmrooms leave&e to exit."
 
-  # ── Bets ──────────────────────────────────────────────────────
+  # Bets
   bets_disabled_global: "&cBets are globally disabled."
   bets_coming_soon: "&eBets will be available soon."
   bets_disabled_room: "&cBets are disabled in this room."
@@ -146,7 +147,7 @@ messages:
   bets_player_not_in_room: "&cThat player is no longer in the room."
   bets_no_room_arg: "&cUsage: /zmrooms bet &f<room>"
 
-  # ── Admin / setup ─────────────────────────────────────────────
+  # Admin / setup
   set_pos_success: "&aTeam &f%team% &aspawn saved for &f%room%&a."
   set_spectate_success: "&aSpectator spawn saved for &f%room%&a."
   setspawn_success: "&aGlobal return spawn has been set."
@@ -159,7 +160,15 @@ messages:
   wg_region_not_found: "&cWorldGuard region &f%room% &cwas not found in this world."
   wg_region_linked: "&7Linked region: &a%room%"
 
-  # ── Command usage ─────────────────────────────────────────────
+  # Custom block select
+  block_select_prompt: "&eRight-click on any block (or hold it in hand) to set it as the barrier."
+  block_select_invalid: "&cThe selected block is not valid. Use a solid block."
+  block_select_success: "&aBarrier block changed to &f%material%&a."
+
+  # Room effects
+  effects_already_added: "&cThat effect is already configured in this room."
+
+  # ── Command usage ─────────────────────────────────────────────────────────
   invalid_amount: "&cAmount must be a valid number (example: 2 or 2v2)."
   usage_create: "&cUsage: /zmrooms create <name> <NORMAL|CLAN>"
   usage_delete: "&cUsage: /zmrooms delete <name>"
@@ -175,7 +184,7 @@ messages:
   usage_spectate: "&cUsage: /zmrooms spectate <room|leave>"
   usage_reload: "&cUsage: /zmrooms reload"
 
-  # ── Help menu ─────────────────────────────────────────────────
+  # Help menu
   help_header: "&8&m----------------------------------------"
   help_title: "&c&lzMPvPRooms &7- Help"
   help_create: "&e/zmrooms create <name> <type> &7- Create room"
@@ -197,6 +206,15 @@ messages:
   help_bet: "&e/zmrooms bet <name> &7- Open betting menu"
   help_stats: "&e/zmrooms stats &7- View stats"
   help_footer: "&8&m----------------------------------------"
+
+# ----------------------------------------------------------------
+# Placeholders
+# ----------------------------------------------------------------
+placeholders:
+  status_active: "&aActive"
+  status_playing: "&ePlaying"
+  status_disabled: "&cDisabled"
+  status_unknown: "&7Unknown"
 
 # ----------------------------------------------------------------
 # GUIs
@@ -312,6 +330,13 @@ guis:
     - " &#FF5018&l| &fLeft Click &8→ &#FF5018+5s"
     - " &#FF5018&l| &fRight Click &8→ &#FF5018-5s"
 
+  editor_status_name: "&fState &8→ &#FF5018&lCHANGE"
+  editor_status_lore:
+    - ""
+    - " &#FF5018&l| &fCurrent: %status%"
+    - ""
+    - "&#FF5018■ Click to toggle"
+
   editor_action_name: "&fChannels &8→ &#FF5018&lCONFIG"
   editor_action_lore:
     - ""
@@ -343,3 +368,43 @@ guis:
     - " &#FF5018&l| &fReturn to room menu"
     - ""
     - "&#FF5018■ Click to return"
+
+  editor_block_name: "&fCustom Block &8→ &#FF5018&lSELECT"
+  editor_block_lore:
+    - ""
+    - " &#FF5018&l| &fCurrent: &b%material%"
+    - ""
+    - " &#FF5018&l| &7Close the GUI and right-click"
+    - " &#FF5018&l| &7any block (or hold it in hand)"
+    - ""
+    - "&#FF5018■ Click to select"
+
+  editor_effects_name: "&fRoom Effects &8→ &#FF5018&lEDIT"
+  editor_effects_lore:
+    - ""
+    - " &#FF5018&l| &fConfigured: &b%count%"
+    - ""
+    - "&#FF5018■ Click to manage"
+
+  effects_editor_title: "&8Effects &7| &d%room%"
+  effects_add_name: "&fAdd Effect &8→ &#FF5018&lNEW"
+  effects_add_lore:
+    - ""
+    - " &#FF5018&l| &fOpens the effect selector"
+    - ""
+    - "&#FF5018■ Click to add"
+
+  effect_item_lore:
+    - ""
+    - " &#FF5018&l| &fEffect: &b%effect%"
+    - " &#FF5018&l| &fLevel: &b%level%"
+    - ""
+    - " &#FF5018&l| &fLeft Click &8→ &#FF5018Raise level"
+    - " &#FF5018&l| &fRight Click &8→ &#FF5018Remove"
+
+  potion_picker_title: "&8Select Effect"
+  potion_picker_item_lore:
+    - ""
+    - " &#FF5018&l| &fAdd &b%effect%"
+    - ""
+    - "&#FF5018■ Click to add"

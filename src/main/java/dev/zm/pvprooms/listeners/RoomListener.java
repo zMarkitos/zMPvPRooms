@@ -216,6 +216,12 @@ public class RoomListener implements Listener {
                     && !room.isFull() && !isInsideArena(room, event.getFrom())
                     && player.hasPermission("zmrooms.use")
                     && player.getGameMode() != GameMode.SPECTATOR) {
+                if (!room.isEnabled() && !player.hasPermission("zmpvprooms.bypass.disabled")) {
+                    event.setCancelled(true);
+                    player.teleport(event.getFrom());
+                    player.sendMessage(plugin.getConfigManager().getMessage("room_disabled"));
+                    break;
+                }
                 plugin.getMatchManager().joinRoom(player, room);
                 break;
             }

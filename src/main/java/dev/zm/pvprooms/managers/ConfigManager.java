@@ -40,14 +40,20 @@ public class ConfigManager {
             langFolder.mkdirs();
         }
 
+        LangMigrator migrator = new LangMigrator(plugin);
+
         File esFile = new File(langFolder, "lang_ES.yml");
         if (!esFile.exists()) {
             plugin.saveResource("lang/lang_ES.yml", false);
+        } else {
+            migrator.migrate(esFile, "lang/lang_ES.yml");
         }
 
         File enFile = new File(langFolder, "lang_EN.yml");
         if (!enFile.exists()) {
             plugin.saveResource("lang/lang_EN.yml", false);
+        } else {
+            migrator.migrate(enFile, "lang/lang_EN.yml");
         }
     }
 

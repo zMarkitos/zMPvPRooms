@@ -16,63 +16,44 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * PlaceholderAPI expansion for zMPvPRooms.
+ * %identifier_currentzone% – room name the player is in, or "none"
  *
- * <p>Registered under four identifiers so server owners can use whichever
- * prefix they prefer: {@code rooms}, {@code zmrooms}, {@code zmpvp},
- * {@code zmpvprooms}.</p>
+ * Personal stats (total):
+ * %identifier_kills% – normal_kills + clan_kills
+ * %identifier_deaths% – normal_deaths + clan_deaths
+ * %identifier_wins% – normal_wins + clan_wins
+ * %identifier_losses% – normal_losses + clan_losses
+ * %identifier_streak% – current win streak
+ * %identifier_kdr% – total kills / total deaths (2 decimal places)
  *
- * <h3>Available placeholders</h3>
- * <pre>
- *  %identifier_currentzone%          – room name the player is in, or "none"
+ * Personal stats (by mode):
+ * %identifier_mynormalkills% – normal kills
+ * %identifier_mynormaldeaths% – normal deaths
+ * %identifier_mynormalwins% – normal wins
+ * %identifier_mynormallosses% – normal losses
+ * %identifier_myclankills% – clan kills
+ * %identifier_myclandeaths% – clan deaths
+ * %identifier_myclanwins% – clan wins
+ * %identifier_myclanlosses% – clan losses
  *
- *  Personal stats (total):
- *  %identifier_kills%                – normal_kills + clan_kills
- *  %identifier_deaths%               – normal_deaths + clan_deaths
- *  %identifier_wins%                 – normal_wins + clan_wins
- *  %identifier_losses%               – normal_losses + clan_losses
- *  %identifier_streak%               – current win streak
- *  %identifier_kdr%                  – total kills / total deaths (2 decimal places)
- *
- *  Personal stats (by mode):
- *  %identifier_mynormalkills%        – normal kills
- *  %identifier_mynormaldeaths%       – normal deaths
- *  %identifier_mynormalwins%         – normal wins
- *  %identifier_mynormallosses%       – normal losses
- *  %identifier_myclankills%          – clan kills
- *  %identifier_myclandeaths%         – clan deaths
- *  %identifier_myclanwins%           – clan wins
- *  %identifier_myclanlosses%         – clan losses
- *
- *  Leaderboards (name / value):
- *  %identifier_top_normal_wins_1%    – name of #1 in normal wins
- *  %identifier_top_normal_wins_value_1% – value of #1 in normal wins
- *  Supported columns: normal_wins, clan_wins, normal_kills, clan_kills,
- *                     normal_deaths, clan_deaths
- * </pre>
+ * Leaderboards (name / value):
+ * %identifier_top_normal_wins_1% – name of #1 in normal wins
+ * %identifier_top_normal_wins_value_1% – value of #1 in normal wins
+ * Supported columns: normal_wins, clan_wins, normal_kills, clan_kills,
+ * normal_deaths, clan_deaths
  */
 public class RoomsPlaceholderExpansion extends PlaceholderExpansion {
 
-    // Columns that are allowed in leaderboard queries (whitelist for SQL safety)
     private static final List<String> LEADERBOARD_COLUMNS = List.of(
             "normal_wins", "clan_wins",
             "normal_kills", "clan_kills",
-            "normal_deaths", "clan_deaths"
-    );
+            "normal_deaths", "clan_deaths");
 
     private final ZMPvPRooms plugin;
     private final String identifier;
-
-    //  Leaderboard cache (refreshed asynchronously) 
-    /** Snapshot of leaderboard data. Replaced atomically after each async refresh. */
     private volatile Map<String, List<SQLiteDatabase.TopEntry>> topCache = new HashMap<>();
-    /** Timestamp of the last completed cache refresh. */
     private volatile long topCacheAt = 0L;
-    /** Guards against scheduling multiple simultaneous refreshes. */
     private volatile boolean topRefreshing = false;
-
-    //  Personal stats cache 
-    /** Thread-safe map: UUID → cached snapshot. */
     private final ConcurrentHashMap<UUID, CachedStats> personalCache = new ConcurrentHashMap<>();
 
     public RoomsPlaceholderExpansion(ZMPvPRooms plugin, String identifier) {
@@ -80,30 +61,33 @@ public class RoomsPlaceholderExpansion extends PlaceholderExpansion {
         this.identifier = identifier.toLowerCase(Locale.ROOT);
     }
 
-    // PlaceholderExpansion contract
+    @Override
+    public @NotNull String getIdentifier() {
+        return identifier;
+    }
 
     @Override
-    public @NotNull String getIdentifier() { return identifier; }
+    public @NotNull String getAuthor() {
+        return "zMarkitos_";
+    }
 
     @Override
-    public @NotNull String getAuthor() { return "zMarkitos_"; }
+    public @NotNull String getVersion() {
+        return plugin.getDescription().getVersion();
+    }
 
     @Override
-    public @NotNull String getVersion() { return plugin.getDescription().getVersion(); }
-
-    /** Keep the expansion registered across reloads. */
-    @Override
-    public boolean persist() { return true; }
-
-    // Placeholder resolution
+    public boolean persist() {
+        return true;
+    }
 
     @Override
     public String onRequest(OfflinePlayer player, @NotNull String params) {
-        if (player == null) return "";
+        if (player == null)
+            return "";
 
         String key = params.toLowerCase(Locale.ROOT).trim();
 
-        // -- Current zone --
         if (key.equals("currentzone")) {
             Optional<Room> room = player.isOnline()
                     ? plugin.getRoomManager().getRoomByPlayer(player.getPlayer())
@@ -111,18 +95,47 @@ public class RoomsPlaceholderExpansion extends PlaceholderExpansion {
             return room.map(Room::getName).orElse("none");
         }
 
-        // -- Leaderboard --
         if (key.startsWith("top_")) {
             triggerTopRefreshIfNeeded();
             return resolveTopPlaceholder(key);
         }
 
-        // -- Personal stats --
+        if (key.startsWith("status_")) {
+            String roomName = key.substring("status_".length());
+            Optional<Room> optRoom = plugin.getRoomManager().getRoom(roomName);
+            if (!optRoom.isPresent()) {
+                return dev.zm.pvprooms.utils.CC
+                        .translate(plugin.getConfigManager().getRawMessage("placeholders.status_unknown"));
+            }
+            Room room = optRoom.get();
+            if (!room.isEnabled()) {
+                return dev.zm.pvprooms.utils.CC
+                        .translate(plugin.getConfigManager().getRawMessage("placeholders.status_disabled"));
+            }
+            if (room.getState() == dev.zm.pvprooms.models.enums.RoomState.WAITING) {
+                return dev.zm.pvprooms.utils.CC
+                        .translate(plugin.getConfigManager().getRawMessage("placeholders.status_active"));
+            }
+            return dev.zm.pvprooms.utils.CC
+                    .translate(plugin.getConfigManager().getRawMessage("placeholders.status_playing"));
+        }
+
+        if (key.startsWith("players_")) {
+            String roomName = key.substring("players_".length());
+            Optional<Room> optRoom = plugin.getRoomManager().getRoom(roomName);
+            return optRoom.map(room -> String.valueOf(room.getPlayers().size())).orElse("0");
+        }
+
+        if (key.startsWith("max_")) {
+            String roomName = key.substring("max_".length());
+            Optional<Room> optRoom = plugin.getRoomManager().getRoom(roomName);
+            return optRoom.map(room -> String.valueOf(room.getCapacity())).orElse("0");
+        }
+
         SQLiteDatabase.StatRow stats = getCachedStats(player.getUniqueId(),
                 player.isOnline() ? player.getPlayer().getName() : player.getName());
 
         switch (key) {
-            //  Combined totals 
             case "kills":
                 return String.valueOf(stats.normalKills + stats.clanKills);
             case "deaths":
@@ -135,11 +148,11 @@ public class RoomsPlaceholderExpansion extends PlaceholderExpansion {
                 return String.valueOf(stats.streak);
             case "kdr": {
                 int totalDeaths = stats.normalDeaths + stats.clanDeaths;
-                int totalKills  = stats.normalKills  + stats.clanKills;
+                int totalKills = stats.normalKills + stats.clanKills;
                 double kdr = totalDeaths <= 0 ? totalKills : totalKills / (double) totalDeaths;
                 return String.format(Locale.US, "%.2f", kdr);
             }
-            //  Normal mode 
+            // Normal mode
             case "mynormalkills":
                 return String.valueOf(stats.normalKills);
             case "mynormaldeaths":
@@ -148,7 +161,7 @@ public class RoomsPlaceholderExpansion extends PlaceholderExpansion {
                 return String.valueOf(stats.normalWins);
             case "mynormallosses":
                 return String.valueOf(stats.normalLosses);
-            //  Clan mode 
+            // Clan mode
             case "myclankills":
                 return String.valueOf(stats.clanKills);
             case "myclandeaths":
@@ -162,12 +175,6 @@ public class RoomsPlaceholderExpansion extends PlaceholderExpansion {
         }
     }
 
-    // Leaderboard
-
-    /**
-     * Schedules an async cache refresh if the data is stale and no refresh is
-     * already running. The main thread never blocks on SQL.
-     */
     private void triggerTopRefreshIfNeeded() {
         int cacheSecs = Math.max(5, plugin.getConfig().getInt("leaderboards.cache-seconds", 30));
         long now = System.currentTimeMillis();
@@ -183,7 +190,7 @@ public class RoomsPlaceholderExpansion extends PlaceholderExpansion {
                 for (String col : LEADERBOARD_COLUMNS) {
                     fresh.put(col, plugin.getDatabase().queryTop(col, size));
                 }
-                topCache   = fresh;
+                topCache = fresh;
                 topCacheAt = System.currentTimeMillis();
             } finally {
                 topRefreshing = false;
@@ -191,21 +198,10 @@ public class RoomsPlaceholderExpansion extends PlaceholderExpansion {
         });
     }
 
-    /**
-     * Resolves a top_ placeholder from the in-memory cache.
-     *
-     * <p>Supported formats:
-     * <ul>
-     *   <li>{@code top_normal_wins_1}          → player name at rank 1</li>
-     *   <li>{@code top_normal_wins_value_1}     → score at rank 1</li>
-     * </ul>
-     */
     private String resolveTopPlaceholder(String key) {
-        // key examples:
-        //   top_normal_wins_1           → parts: [top][normal][wins][1]        length=4
-        //   top_normal_wins_value_1     → parts: [top][normal][wins][value][1]  length=5
         String[] parts = key.split("_");
-        if (parts.length < 4) return "";
+        if (parts.length < 4)
+            return "";
 
         boolean valueMode = parts.length >= 5 && "value".equals(parts[3]);
         String column;
@@ -213,13 +209,14 @@ public class RoomsPlaceholderExpansion extends PlaceholderExpansion {
         try {
             if (valueMode) {
                 // top _ <t1> _ <t2> _ value _ <rank>
-                if (parts.length < 6) return "0";
+                if (parts.length < 6)
+                    return "0";
                 column = parts[1] + "_" + parts[2];
-                rank   = Integer.parseInt(parts[5]);
+                rank = Integer.parseInt(parts[5]);
             } else {
                 // top _ <t1> _ <t2> _ <rank>
                 column = parts[1] + "_" + parts[2];
-                rank   = Integer.parseInt(parts[3]);
+                rank = Integer.parseInt(parts[3]);
             }
         } catch (NumberFormatException e) {
             return valueMode ? "0" : "N/A";
@@ -238,13 +235,6 @@ public class RoomsPlaceholderExpansion extends PlaceholderExpansion {
         return valueMode ? String.valueOf(entry.value) : entry.name;
     }
 
-    // Personal stats cache
-
-    /**
-     * Returns a stat snapshot for the player, loading from DB asynchronously
-     * if the cached copy is stale. The main thread always gets cached data
-     * instantly — no blocking SQL.
-     */
     private SQLiteDatabase.StatRow getCachedStats(UUID uuid, String name) {
         long now = System.currentTimeMillis();
         int cacheMs = Math.max(1000, plugin.getConfig().getInt("leaderboards.personal-cache-ms", 3000));

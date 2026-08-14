@@ -19,6 +19,7 @@ public class Room {
     private String name;
     private RoomType type;
     private RoomState state;
+    private boolean enabled;
 
     private Location spawn1;
     private Location spawn2;
@@ -59,6 +60,7 @@ public class Room {
         this.name = name;
         this.type = type;
         this.state = RoomState.WAITING;
+        this.enabled = true;
         this.players = new ArrayList<>();
         this.spectators = new ArrayList<>();
 
@@ -105,6 +107,14 @@ public class Room {
 
     public void setState(RoomState state) {
         this.state = state;
+    }
+
+    public boolean isEnabled() {
+        return enabled;
+    }
+
+    public void setEnabled(boolean enabled) {
+        this.enabled = enabled;
     }
 
     public Location getSpawn1() {

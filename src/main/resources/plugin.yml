@@ -6,7 +6,7 @@ authors: [ zMarkitos_ ]
 description: A complete and optimized PvP rooms system
 
 depend: []
-softdepend: [PlaceholderAPI, Vault, uClans, WorldGuard]
+softdepend: [PlaceholderAPI, Vault, uClans, WorldGuard, ByteClans]
 
 commands:
   zmrooms:

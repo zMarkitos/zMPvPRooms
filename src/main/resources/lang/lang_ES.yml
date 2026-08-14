@@ -41,6 +41,7 @@ messages:
   room_command_blocked: "&cNo puedes usar ese comando mientras estas dentro de una room."
   room_external_inventory_blocked: "&cNo puedes abrir ese inventario mientras estas dentro de una room."
   normal_auto_join: "&eLas salas NORMAL se unen entrando a su region, no con /join."
+  room_disabled: "&cEsta sala esta deshabilitada en este momento."
 
   # Feedback de entrada/salida
   match_join_welcome_title: "&6&l⚔ Entraste a Combate"
@@ -154,7 +155,15 @@ messages:
   wg_region_not_found: "&cNo se encontro la region de WorldGuard &f%room%&c en este mundo."
   wg_region_linked: "&7Region vinculada: &a%room%"
 
-  # Uso de comandos 
+  # Bloques personalizados
+  block_select_prompt: "&eHaz clic derecho sobre un bloque (o tenlo en mano) para seleccionarlo como barrera."
+  block_select_invalid: "&cEl bloque seleccionado no es valido. Usa un bloque solido."
+  block_select_success: "&aBloque de barrera cambiado a &f%material%&a."
+
+  # Efectos de Room
+  effects_already_added: "&cEse efecto ya esta configurado en la sala."
+
+  # Uso de comandos
   invalid_amount: "&cLa cantidad debe ser un numero valido (ej: 2 o 2v2)."
   usage_create: "&cUso: /zmrooms create <nombre> <NORMAL|CLAN>"
   usage_delete: "&cUso: /zmrooms delete <nombre>"
@@ -169,13 +178,13 @@ messages:
   usage_setspectate: "&cUso: /zmrooms setspectate <sala>"
   usage_spectate: "&cUso: /zmrooms spectate <sala|leave>"
   usage_reload: "&cUso: /zmrooms reload"
-  # ── Actualizaciones ───────────────────────────────────────────
+  # Actualizaciones
   update_title: "&a&lACTUALIZACIÓN DISPONIBLE"
   update_subtitle: "&7v%current_version% &8➜ &av%latest_version%"
   update_available: "&f¡Hay una nueva actualización &a(v%latest_version%)&f! Estás usando &c(v%current_version%)&f."
   update_link: "&eDescargar: &n%version_url%"
 
-  # ── Gestión de salas ─────────────────────────────────────────────
+  # Gestión de salas
   help_header: "&8&m----------------------------------------"
   help_title: "&c&lzMPvPRooms &7- Ayuda"
   help_create: "&e/zmrooms create <nombre> <tipo> &7- Crea una sala"
@@ -197,6 +206,15 @@ messages:
   help_bet: "&e/zmrooms bet <nombre> &7- Abrir menu de apuestas"
   help_stats: "&e/zmrooms stats &7- Ver estadisticas"
   help_footer: "&8&m----------------------------------------"
+
+# ----------------------------------------------------------------
+# Placeholders
+# ----------------------------------------------------------------
+placeholders:
+  status_active: "&aActivo"
+  status_playing: "&eJugando"
+  status_disabled: "&cDeshabilitado"
+  status_unknown: "&7Desconocido"
 
 # ----------------------------------------------------------------
 # Interfaces gráficas (GUIs)
@@ -312,6 +330,13 @@ guis:
     - " &#FF5018&l| &fClic Izq &8→ &#FF5018+5s"
     - " &#FF5018&l| &fClic Der &8→ &#FF5018-5s"
 
+  editor_status_name: "&fEstado &8→ &#FF5018&lCAMBIAR"
+  editor_status_lore:
+    - ""
+    - " &#FF5018&l| &fActual: %status%"
+    - ""
+    - "&#FF5018■ Click para alternar"
+
   editor_action_name: "&fCanales &8→ &#FF5018&lCONFIG"
   editor_action_lore:
     - ""
@@ -343,3 +368,44 @@ guis:
     - " &#FF5018&l| &fRegresar al menu"
     - ""
     - "&#FF5018■ Click para volver"
+
+  editor_block_name: "&fBloque Personalizado &8→ &#FF5018&lCAMBIAR"
+  editor_block_lore:
+    - ""
+    - " &#FF5018&l| &fActual: &b%material%"
+    - ""
+    - " &#FF5018&l| &7Cierra la GUI y haz clic"
+    - " &#FF5018&l| &7sobre cualquier bloque"
+    - " &#FF5018&l| &7(o tenlo en la mano)"
+    - ""
+    - "&#FF5018■ Click para seleccionar"
+
+  editor_effects_name: "&fEfectos de Sala &8→ &#FF5018&lEDITAR"
+  editor_effects_lore:
+    - ""
+    - " &#FF5018&l| &fConfigurados: &b%count%"
+    - ""
+    - "&#FF5018■ Click para gestionar"
+
+  effects_editor_title: "&8Efectos &7| &d%room%"
+  effects_add_name: "&fAgregar Efecto &8→ &#FF5018&lNUEVO"
+  effects_add_lore:
+    - ""
+    - " &#FF5018&l| &fAbre el selector de efectos"
+    - ""
+    - "&#FF5018■ Click para agregar"
+
+  effect_item_lore:
+    - ""
+    - " &#FF5018&l| &fEfecto: &b%effect%"
+    - " &#FF5018&l| &fNivel: &b%level%"
+    - ""
+    - " &#FF5018&l| &fClic Izq &8→ &#FF5018Subir nivel"
+    - " &#FF5018&l| &fClic Der &8→ &#FF5018Eliminar"
+
+  potion_picker_title: "&8Seleccionar Efecto"
+  potion_picker_item_lore:
+    - ""
+    - " &#FF5018&l| &fAgregar &b%effect%"
+    - ""
+    - "&#FF5018■ Click para agregar"

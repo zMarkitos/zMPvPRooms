@@ -288,6 +288,8 @@ public class MatchManager {
             return;
         }
 
+        // Remove room effects BEFORE removing from room, so we still have context for snapshot restoration.
+        plugin.getRoomEffectManager().removeEffects(victim, room);
         room.removePlayer(victim.getUniqueId());
         updateKillDeathStats(killer, victim, room.getType());
 
@@ -313,6 +315,8 @@ public class MatchManager {
             return;
         }
 
+        // Remove room effects BEFORE removing from room.
+        plugin.getRoomEffectManager().removeEffects(victim, room);
         room.removePlayer(victim.getUniqueId());
         updateKillDeathStats(killer, victim, room.getType());
 
@@ -332,6 +336,12 @@ public class MatchManager {
     }
 
     public void handleQuit(Player player, Room room) {
+        // Remove room effects BEFORE removing from room, so the snapshot can be restored.
+        // Only needed when the match is PLAYING (effects are only applied during PLAYING).
+        if (room.getState() == RoomState.PLAYING) {
+            plugin.getRoomEffectManager().removeEffects(player, room);
+        }
+
         room.removePlayer(player.getUniqueId());
         room.getSpectators().remove(player.getUniqueId());
 
@@ -710,9 +720,7 @@ public class MatchManager {
             if (p == null) {
                 continue;
             }
-            for (PotionEffect effect : room.getEffects()) {
-                p.addPotionEffect(effect);
-            }
+            plugin.getRoomEffectManager().applyEffects(p, room);
         }
 
         if (room.getMaxDuelTime() > 0) {
@@ -868,6 +876,9 @@ public class MatchManager {
         cancelTimeLimit(room.getName());
         roomTimeRemaining.remove(room.getName().toLowerCase());
         stopDuelBossBar(room.getName());
+
+        // Remove room effects from all remaining players (winners are still in room at this point).
+        plugin.getRoomEffectManager().removeAllEffectsForRoom(room);
 
         if (room.isChatEnabled()) {
             room.broadcast(plugin.getConfigManager().getMessage("match_ended_broadcast"));
@@ -1776,6 +1787,9 @@ public class MatchManager {
         roomTimeRemaining.remove(room.getName().toLowerCase());
         stopDuelBossBar(room.getName());
 
+        // Remove room effects before teleporting players away.
+        plugin.getRoomEffectManager().removeAllEffectsForRoom(room);
+
         teleportToSpawn(new ArrayList<>(room.getPlayers()));
         teleportToSpawn(new ArrayList<>(room.getSpectators()));
         cleanupRoom(room);
@@ -1791,7 +1805,6 @@ public class MatchManager {
                 } else {
                     p.teleport(plugin.getReturnSpawn());
                 }
-                p.getActivePotionEffects().forEach(effect -> p.removePotionEffect(effect.getType()));
                 if (p.getGameMode() == GameMode.SPECTATOR) {
                     GameMode previous = spectatorModes.remove(uuid);
                     p.setGameMode(previous != null ? previous : GameMode.SURVIVAL);
@@ -1799,6 +1812,7 @@ public class MatchManager {
             } else {
                 spawnOnJoin.add(uuid);
                 spectatorModes.remove(uuid);
+                plugin.getRoomEffectManager().clearSnapshot(uuid);
             }
         }
     }

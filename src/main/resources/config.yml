@@ -77,10 +77,14 @@ hooks:
     # Enables UltimateClans / uClans provider.
     ultimateclans: true
 
+    # Enables ByteClans provider.
+    byteclans: true
+
     # Detection priority. The first available plugin will be used.
     provider-priority:
       - "UltimateClans"
       - "uClans"
+      - "ByteClans"
 
 # ================================================================
 # Teams (only affects NORMAL rooms with more than 1v1)
