@@ -1,6 +1,7 @@
 package dev.zm.pvprooms.managers;
 
 import dev.zm.pvprooms.ZMPvPRooms;
+import dev.zm.pvprooms.hooks.RoomsPlaceholderExpansion;
 import dev.zm.pvprooms.hooks.worldguard.WorldGuardHook;
 import dev.zm.pvprooms.models.Room;
 import dev.zm.pvprooms.models.enums.RoomState;
@@ -291,7 +292,21 @@ public class MatchManager {
         // Remove room effects BEFORE removing from room, so we still have context for snapshot restoration.
         plugin.getRoomEffectManager().removeEffects(victim, room);
         room.removePlayer(victim.getUniqueId());
-        updateKillDeathStats(killer, victim, room.getType());
+
+        // Write kill/death stats asynchronously — never block the main thread with JDBC.
+        final UUID victimId = victim.getUniqueId();
+        final String victimName = victim.getName();
+        final UUID killerId = killer != null ? killer.getUniqueId() : null;
+        final String killerName = killer != null ? killer.getName() : null;
+        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+            updateKillDeathStats(victimId, victimName, killerId, killerName, room.getType());
+            // Invalidate personal stat cache so placeholders reflect the new values immediately.
+            RoomsPlaceholderExpansion exp = plugin.getPlaceholderExpansion();
+            if (exp != null) {
+                exp.invalidatePlayerCache(victimId);
+                if (killerId != null) exp.invalidatePlayerCache(killerId);
+            }
+        });
 
         if (room.isChatEnabled()) {
             room.broadcast(plugin.getConfigManager().getMessage("match_player_eliminated")
@@ -318,7 +333,21 @@ public class MatchManager {
         // Remove room effects BEFORE removing from room.
         plugin.getRoomEffectManager().removeEffects(victim, room);
         room.removePlayer(victim.getUniqueId());
-        updateKillDeathStats(killer, victim, room.getType());
+
+        // Write kill/death stats asynchronously — never block the main thread with JDBC.
+        final UUID victimId = victim.getUniqueId();
+        final String victimName = victim.getName();
+        final UUID killerId = killer != null ? killer.getUniqueId() : null;
+        final String killerName = killer != null ? killer.getName() : null;
+        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+            updateKillDeathStats(victimId, victimName, killerId, killerName, room.getType());
+            // Invalidate personal stat cache so placeholders reflect the new values immediately.
+            RoomsPlaceholderExpansion exp = plugin.getPlaceholderExpansion();
+            if (exp != null) {
+                exp.invalidatePlayerCache(victimId);
+                if (killerId != null) exp.invalidatePlayerCache(killerId);
+            }
+        });
 
         if (room.isChatEnabled()) {
             room.broadcast(plugin.getConfigManager().getMessage("match_player_eliminated")
@@ -897,20 +926,20 @@ public class MatchManager {
         }
 
         playWinnerCelebration(room, winner, winners, losers, winnerTeam);
-        for (UUID uuid : winners) {
-            Player p = Bukkit.getPlayer(uuid);
-            if (p != null) {
-                increaseStreak(p);
-            }
-        }
-        for (UUID uuid : losers) {
-            Player p = Bukkit.getPlayer(uuid);
-            if (p != null) {
-                resetStreak(p);
-            }
-        }
 
+        // All database writes (streak, wins, losses) are consolidated in a single
+        // async task to avoid any JDBC work on the main thread.
         Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+            // Streak updates first so they are written before wins/losses.
+            for (UUID uuid : winners) {
+                Player p = Bukkit.getPlayer(uuid);
+                if (p != null) increaseStreak(p);
+            }
+            for (UUID uuid : losers) {
+                Player p = Bukkit.getPlayer(uuid);
+                if (p != null) resetStreak(p);
+            }
+            // Win / loss counters.
             for (UUID uuid : winners) {
                 Player player = Bukkit.getPlayer(uuid);
                 if (player != null) {
@@ -922,6 +951,13 @@ public class MatchManager {
                 if (player != null) {
                     updateStats(player, room.getType(), false);
                 }
+            }
+            // Invalidate personal stat caches so placeholders show updated values
+            // on the very next request without waiting for the TTL to expire.
+            RoomsPlaceholderExpansion exp = plugin.getPlaceholderExpansion();
+            if (exp != null) {
+                for (UUID uuid : winners) exp.invalidatePlayerCache(uuid);
+                for (UUID uuid : losers)  exp.invalidatePlayerCache(uuid);
             }
         });
 
@@ -1299,18 +1335,26 @@ public class MatchManager {
     /**
      * Increments kill/death columns for the given participants.
      * Must be called from an async thread.
+     *
+     * @param victimId   UUID of the player who died
+     * @param victimName display name of the victim
+     * @param killerId   UUID of the killer, or {@code null} for environmental deaths
+     * @param killerName display name of the killer, or {@code null}
+     * @param type       room type, determines which stat columns to increment
      */
-    private void updateKillDeathStats(Player killer, Player victim, RoomType type) {
-        if (plugin.getDatabase() == null || victim == null) return;
+    private void updateKillDeathStats(UUID victimId, String victimName,
+                                      UUID killerId, String killerName,
+                                      RoomType type) {
+        if (plugin.getDatabase() == null || victimId == null) return;
 
         String deathCol = type == RoomType.CLAN ? "clan_deaths" : "normal_deaths";
         plugin.getDatabase().incrementStat(
-                victim.getUniqueId().toString(), victim.getName(), deathCol);
+                victimId.toString(), victimName, deathCol);
 
-        if (killer != null && !killer.getUniqueId().equals(victim.getUniqueId())) {
+        if (killerId != null && !killerId.equals(victimId)) {
             String killCol = type == RoomType.CLAN ? "clan_kills" : "normal_kills";
             plugin.getDatabase().incrementStat(
-                    killer.getUniqueId().toString(), killer.getName(), killCol);
+                    killerId.toString(), killerName, killCol);
         }
     }
 

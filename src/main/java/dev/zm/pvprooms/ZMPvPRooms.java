@@ -47,6 +47,7 @@ public final class ZMPvPRooms extends JavaPlugin {
     private ClanProvider clanProvider;
     private WorldGuardHook worldGuardHook;
     private VersionChecker versionChecker;
+    private RoomsPlaceholderExpansion placeholderExpansion;
 
     private void log(String message) {
         getServer().getConsoleSender().sendMessage(color(message));
@@ -220,7 +221,13 @@ public final class ZMPvPRooms extends JavaPlugin {
             return;
 
         if (getServer().getPluginManager().getPlugin("PlaceholderAPI") != null) {
-            new RoomsPlaceholderExpansion(this, "rooms").register();
+            // Keep one reference so MatchManager can invalidate personal stat caches.
+            placeholderExpansion = new RoomsPlaceholderExpansion(this, "rooms");
+            placeholderExpansion.register();
+            // Kick off the first leaderboard refresh immediately so top_* placeholders
+            // are populated from boot instead of returning "N/A" until the first query.
+            getServer().getScheduler().runTaskAsynchronously(this,
+                    placeholderExpansion::triggerTopRefreshIfNeeded);
             new RoomsPlaceholderExpansion(this, "zmrooms").register();
             new RoomsPlaceholderExpansion(this, "zmpvp").register();
             new RoomsPlaceholderExpansion(this, "zmpvprooms").register();
@@ -316,6 +323,18 @@ public final class ZMPvPRooms extends JavaPlugin {
 
     public VersionChecker getVersionChecker() {
         return versionChecker;
+    }
+
+    /**
+     * Returns the primary {@link RoomsPlaceholderExpansion} instance, or
+     * {@code null}
+     * if PlaceholderAPI is not installed. Used by {@link MatchManager} to
+     * invalidate
+     * personal stat caches after a write so placeholders reflect updated values
+     * quickly.
+     */
+    public RoomsPlaceholderExpansion getPlaceholderExpansion() {
+        return placeholderExpansion;
     }
 
     public void reloadAll() {

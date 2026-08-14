@@ -175,7 +175,7 @@ public class RoomsPlaceholderExpansion extends PlaceholderExpansion {
         }
     }
 
-    private void triggerTopRefreshIfNeeded() {
+    public void triggerTopRefreshIfNeeded() {
         int cacheSecs = Math.max(5, plugin.getConfig().getInt("leaderboards.cache-seconds", 30));
         long now = System.currentTimeMillis();
         if (now - topCacheAt < cacheSecs * 1000L || topRefreshing) {
@@ -244,7 +244,10 @@ public class RoomsPlaceholderExpansion extends PlaceholderExpansion {
             return cached.row;
         }
 
-        // Return stale data immediately and refresh in background
+        // Return stale data immediately and schedule a background refresh.
+        // We do NOT pre-insert a placeholder entry here — the async task will
+        // put the real data in the map once it finishes, avoiding the race
+        // condition where the pre-inserted entry would suppress the real update.
         final SQLiteDatabase.StatRow stale = cached != null ? cached.row : new SQLiteDatabase.StatRow();
 
         if (plugin.getDatabase() != null) {
@@ -255,12 +258,21 @@ public class RoomsPlaceholderExpansion extends PlaceholderExpansion {
             });
         }
 
-        // Optimistically insert a fresh entry so next call gets real data
-        if (cached == null) {
-            personalCache.put(uuid, new CachedStats(stale, 0L)); // cachedAt=0 forces next refresh
-        }
-
         return stale;
+    }
+
+    /**
+     * Removes the cached stats entry for the given player, forcing the next
+     * placeholder request to load fresh data from the database. Should be
+     * called by {@link dev.zm.pvprooms.managers.MatchManager} immediately
+     * after writing new stats to the database.
+     *
+     * @param uuid the player whose cache entry should be invalidated
+     */
+    public void invalidatePlayerCache(UUID uuid) {
+        if (uuid != null) {
+            personalCache.remove(uuid);
+        }
     }
 
     // Internal cache holder
