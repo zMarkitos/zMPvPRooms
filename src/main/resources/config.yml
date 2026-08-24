@@ -74,6 +74,9 @@ hooks:
     # Enables all clan providers.
     enabled: true
 
+    # Enables the ApexClan provider.
+    apexclan: true
+
     # Enables UltimateClans / uClans provider.
     ultimateclans: true
 
@@ -85,6 +88,7 @@ hooks:
       - "UltimateClans"
       - "uClans"
       - "ByteClans"
+      - "ApexClan"
 
 # ================================================================
 # Teams (only affects NORMAL rooms with more than 1v1)

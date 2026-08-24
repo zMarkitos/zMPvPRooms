@@ -4,6 +4,7 @@ import dev.zm.pvprooms.commands.MainCommand;
 import dev.zm.pvprooms.commands.MainTabCompleter;
 import dev.zm.pvprooms.database.SQLiteDatabase;
 import dev.zm.pvprooms.hooks.RoomsPlaceholderExpansion;
+import dev.zm.pvprooms.hooks.clans.ApexClanLoader;
 import dev.zm.pvprooms.hooks.clans.ClanProvider;
 import dev.zm.pvprooms.hooks.clans.UClansLoader;
 import dev.zm.pvprooms.hooks.clans.ByteClansLoader;
@@ -226,8 +227,7 @@ public final class ZMPvPRooms extends JavaPlugin {
             placeholderExpansion.register();
             // Kick off the first leaderboard refresh immediately so top_* placeholders
             // are populated from boot instead of returning "N/A" until the first query.
-            getServer().getScheduler().runTaskAsynchronously(this,
-                    placeholderExpansion::triggerTopRefreshIfNeeded);
+            getServer().getScheduler().runTaskAsynchronously(this, (Runnable) placeholderExpansion::triggerTopRefreshIfNeeded);
             new RoomsPlaceholderExpansion(this, "zmrooms").register();
             new RoomsPlaceholderExpansion(this, "zmpvp").register();
             new RoomsPlaceholderExpansion(this, "zmpvprooms").register();
@@ -246,8 +246,18 @@ public final class ZMPvPRooms extends JavaPlugin {
         if (!getConfig().getBoolean("hooks.clans.enabled", true))
             return;
 
-        // Try ByteClans first if enabled
-        if (getConfig().getBoolean("hooks.clans.byteclans", true)) {
+        // ApexClan gets first priority when present because it exposes the
+        // service-based API requested by the user.
+        if (getConfig().getBoolean("hooks.clans.apexclan", true)) {
+            try {
+                clanProvider = ApexClanLoader.tryLoad(getServer().getPluginManager(), getLogger());
+            } catch (NoClassDefFoundError ignored) {
+                getLogger().info("ApexClan API not found.");
+            }
+        }
+
+        // Try ByteClans if enabled and ApexClan wasn't found.
+        if (clanProvider == null && getConfig().getBoolean("hooks.clans.byteclans", true)) {
             try {
                 clanProvider = ByteClansLoader.tryLoad(getServer().getPluginManager(), getLogger());
             } catch (NoClassDefFoundError ignored) {
@@ -255,7 +265,7 @@ public final class ZMPvPRooms extends JavaPlugin {
             }
         }
 
-        // If ByteClans wasn't found or wasn't enabled, fallback to UltimateClans
+        // If ByteClans wasn't found or wasn't enabled, fallback to UltimateClans.
         if (clanProvider == null && getConfig().getBoolean("hooks.clans.ultimateclans", true)) {
             try {
                 clanProvider = UClansLoader.tryLoad(getServer().getPluginManager(), getLogger());

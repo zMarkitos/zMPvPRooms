@@ -2,11 +2,10 @@ name: zMPvPRooms
 version: '@project.version@'
 main: dev.zm.pvprooms.ZMPvPRooms
 api-version: '1.19'
-authors: [ zMarkitos_ ]
+author: zMarkitos_
 description: A complete and optimized PvP rooms system
 
-depend: []
-softdepend: [PlaceholderAPI, Vault, uClans, WorldGuard, ByteClans]
+softdepend: [PlaceholderAPI, Vault, uClans, WorldGuard, ByteClans, ApexClan]
 
 commands:
   zmrooms:

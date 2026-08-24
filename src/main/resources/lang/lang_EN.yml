@@ -56,8 +56,8 @@ messages:
   room_leave_title: "&c&lYou Left The Room"
   room_leave_subtitle: "&7You left &f%room%"
   room_leave_actionbar: "&7You are no longer in &f%room%"
-  room_joined_broadcast: "&a%player% &7joined the room. &8(&e%current%&8/&e%max%&8)"
-  room_left_broadcast: "&c%player% &7left the room. &8(&e%current%&8/&e%max%&8)"
+  room_joined_broadcast: "&a%player% &7joined room &e%room%&7. &8(&e%current%&8/&e%max%&8)"
+  room_left_broadcast: "&c%player% &7left room &e%room%&7. &8(&e%current%&8/&e%max%&8)"
   clan_room_joined_broadcast: "&a%player% &7from clan &6%clan% &7joined room &e%room%&7. &8(&e%current%&8/&e%max%&8)"
 
   # Countdown / match start

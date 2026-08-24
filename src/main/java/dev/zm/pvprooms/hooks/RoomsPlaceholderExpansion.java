@@ -39,6 +39,8 @@ import java.util.concurrent.ConcurrentHashMap;
  * Leaderboards (name / value):
  * %identifier_top_normal_wins_1% – name of #1 in normal wins
  * %identifier_top_normal_wins_value_1% – value of #1 in normal wins
+ * %identifier_top_normal_wins_1_room1% – name of #1 in normal wins for room1
+ * %identifier_top_normal_wins_value_1_room1% – value of #1 in normal wins for room1
  * Supported columns: normal_wins, clan_wins, normal_kills, clan_kills,
  * normal_deaths, clan_deaths
  */
@@ -47,13 +49,13 @@ public class RoomsPlaceholderExpansion extends PlaceholderExpansion {
     private static final List<String> LEADERBOARD_COLUMNS = List.of(
             "normal_wins", "clan_wins",
             "normal_kills", "clan_kills",
-            "normal_deaths", "clan_deaths");
+            "normal_deaths", "clan_deaths", "streak");
 
     private final ZMPvPRooms plugin;
     private final String identifier;
-    private volatile Map<String, List<SQLiteDatabase.TopEntry>> topCache = new HashMap<>();
-    private volatile long topCacheAt = 0L;
-    private volatile boolean topRefreshing = false;
+    private volatile Map<String, Map<String, List<SQLiteDatabase.TopEntry>>> topCache = new HashMap<>();
+    private volatile Map<String, Long> topCacheAt = new HashMap<>();
+    private volatile Map<String, Boolean> topRefreshing = new HashMap<>();
     private final ConcurrentHashMap<UUID, CachedStats> personalCache = new ConcurrentHashMap<>();
 
     public RoomsPlaceholderExpansion(ZMPvPRooms plugin, String identifier) {
@@ -96,8 +98,12 @@ public class RoomsPlaceholderExpansion extends PlaceholderExpansion {
         }
 
         if (key.startsWith("top_")) {
-            triggerTopRefreshIfNeeded();
-            return resolveTopPlaceholder(key);
+            TopRequest request = parseTopRequest(key);
+            if (request == null) {
+                return key.contains("value") ? "0" : "N/A";
+            }
+            triggerTopRefreshIfNeeded(request.scopeKey);
+            return resolveTopPlaceholder(request);
         }
 
         if (key.startsWith("status_")) {
@@ -175,33 +181,50 @@ public class RoomsPlaceholderExpansion extends PlaceholderExpansion {
         }
     }
 
+    public void forceTopRefresh() {
+        topCacheAt = new HashMap<>();
+        triggerTopRefreshIfNeeded(null);
+    }
+
     public void triggerTopRefreshIfNeeded() {
+        triggerTopRefreshIfNeeded(null);
+    }
+
+    public void triggerTopRefreshIfNeeded(String roomName) {
         int cacheSecs = Math.max(5, plugin.getConfig().getInt("leaderboards.cache-seconds", 30));
         long now = System.currentTimeMillis();
-        if (now - topCacheAt < cacheSecs * 1000L || topRefreshing) {
+        String scopeKey = scopeKey(roomName);
+        long cachedAt = topCacheAt.getOrDefault(scopeKey, 0L);
+        if (now - cachedAt < cacheSecs * 1000L || topRefreshing.getOrDefault(scopeKey, false)) {
             return;
         }
-        topRefreshing = true;
+        topRefreshing.put(scopeKey, true);
 
         plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
             try {
                 int size = Math.max(1, plugin.getConfig().getInt("leaderboards.size", 10));
                 Map<String, List<SQLiteDatabase.TopEntry>> fresh = new HashMap<>();
                 for (String col : LEADERBOARD_COLUMNS) {
-                    fresh.put(col, plugin.getDatabase().queryTop(col, size));
+                    fresh.put(col, plugin.getDatabase().queryTop(col, size, roomName));
                 }
-                topCache = fresh;
-                topCacheAt = System.currentTimeMillis();
+                Map<String, Map<String, List<SQLiteDatabase.TopEntry>>> cache = new HashMap<>(topCache);
+                cache.put(scopeKey, fresh);
+                topCache = cache;
+
+                Map<String, Long> at = new HashMap<>(topCacheAt);
+                at.put(scopeKey, System.currentTimeMillis());
+                topCacheAt = at;
             } finally {
-                topRefreshing = false;
+                Map<String, Boolean> refreshing = new HashMap<>(topRefreshing);
+                refreshing.put(scopeKey, false);
+                topRefreshing = refreshing;
             }
         });
     }
 
-    private String resolveTopPlaceholder(String key) {
-        String[] parts = key.split("_");
-        if (parts.length < 4)
-            return "";
+    private String resolveTopPlaceholder(TopRequest request) {
+        String[] parts = request.baseKey.split("_");
+        if (parts.length < 4) return "";
 
         boolean valueMode = parts.length >= 5 && "value".equals(parts[3]);
         String column;
@@ -209,10 +232,10 @@ public class RoomsPlaceholderExpansion extends PlaceholderExpansion {
         try {
             if (valueMode) {
                 // top _ <t1> _ <t2> _ value _ <rank>
-                if (parts.length < 6)
+                if (parts.length < 5)
                     return "0";
                 column = parts[1] + "_" + parts[2];
-                rank = Integer.parseInt(parts[5]);
+                rank = Integer.parseInt(parts[4]);
             } else {
                 // top _ <t1> _ <t2> _ <rank>
                 column = parts[1] + "_" + parts[2];
@@ -226,13 +249,55 @@ public class RoomsPlaceholderExpansion extends PlaceholderExpansion {
             return valueMode ? "0" : "N/A";
         }
 
-        List<SQLiteDatabase.TopEntry> list = topCache.getOrDefault(column, List.of());
+        Map<String, List<SQLiteDatabase.TopEntry>> scope = topCache.getOrDefault(request.scopeKey, Map.of());
+        List<SQLiteDatabase.TopEntry> list = scope.getOrDefault(column, List.of());
         if (rank > list.size()) {
             return valueMode ? "0" : "N/A";
         }
 
         SQLiteDatabase.TopEntry entry = list.get(rank - 1);
         return valueMode ? String.valueOf(entry.value) : entry.name;
+    }
+
+    private TopRequest parseTopRequest(String key) {
+        String[] parts = key.split("_");
+        if (parts.length < 4) {
+            return null;
+        }
+        boolean valueMode = parts.length >= 5 && "value".equals(parts[3]);
+        int minGlobalParts = valueMode ? 5 : 4;
+        if (parts.length == minGlobalParts) {
+            return new TopRequest(key, "global", null);
+        }
+        if (parts.length <= minGlobalParts) {
+            return null;
+        }
+        int scopeStart = valueMode ? 5 : 4;
+        String scope = joinTail(parts, scopeStart);
+        String baseKey = joinHead(parts, scopeStart);
+        return new TopRequest(baseKey, scopeKey(scope), scope);
+    }
+
+    private String scopeKey(String roomName) {
+        return roomName == null || roomName.trim().isEmpty() ? "global" : roomName.toLowerCase(Locale.ROOT).trim();
+    }
+
+    private String joinTail(String[] parts, int start) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = start; i < parts.length; i++) {
+            if (i > start) sb.append('_');
+            sb.append(parts[i]);
+        }
+        return sb.toString();
+    }
+
+    private String joinHead(String[] parts, int endExclusive) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < endExclusive; i++) {
+            if (i > 0) sb.append('_');
+            sb.append(parts[i]);
+        }
+        return sb.toString();
     }
 
     private SQLiteDatabase.StatRow getCachedStats(UUID uuid, String name) {
@@ -284,6 +349,18 @@ public class RoomsPlaceholderExpansion extends PlaceholderExpansion {
         CachedStats(SQLiteDatabase.StatRow row, long cachedAt) {
             this.row = row;
             this.cachedAt = cachedAt;
+        }
+    }
+
+    private static final class TopRequest {
+        final String baseKey;
+        final String scopeKey;
+        final String roomName;
+
+        TopRequest(String baseKey, String scopeKey, String roomName) {
+            this.baseKey = baseKey;
+            this.scopeKey = scopeKey;
+            this.roomName = roomName;
         }
     }
 }

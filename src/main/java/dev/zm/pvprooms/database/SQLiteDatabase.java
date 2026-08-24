@@ -22,6 +22,13 @@ public class SQLiteDatabase {
 
     private final ZMPvPRooms plugin;
     private Connection connection;
+    /**
+     * Single lock that serializes every JDBC operation on the shared connection.
+     * SQLite only allows one writer at a time; using a lock instead of a
+     * connection pool keeps the code simple and fully avoids nested-transaction
+     * errors when multiple async tasks write concurrently.
+     */
+    private final Object dbLock = new Object();
 
     public SQLiteDatabase(ZMPvPRooms plugin) {
         this.plugin = plugin;
@@ -63,16 +70,18 @@ public class SQLiteDatabase {
 
     /** Returns the active connection, reconnecting if it was closed. */
     public Connection getConnection() {
-        try {
-            if (connection == null || connection.isClosed()) {
+        synchronized (dbLock) {
+            try {
+                if (connection == null || connection.isClosed()) {
+                    connect();
+                    applyPragmas();
+                }
+            } catch (SQLException e) {
                 connect();
                 applyPragmas();
             }
-        } catch (SQLException e) {
-            connect();
-            applyPragmas();
+            return connection;
         }
-        return connection;
     }
 
     public void close() {
@@ -103,6 +112,23 @@ public class SQLiteDatabase {
                 "  streak        INTEGER NOT NULL DEFAULT 0" +
                 ");";
 
+        String roomStats =
+                "CREATE TABLE IF NOT EXISTS room_stats (" +
+                "  room_name     VARCHAR(64) NOT NULL," +
+                "  uuid          VARCHAR(36) NOT NULL," +
+                "  name          VARCHAR(16)," +
+                "  normal_kills  INTEGER NOT NULL DEFAULT 0," +
+                "  normal_deaths INTEGER NOT NULL DEFAULT 0," +
+                "  normal_wins   INTEGER NOT NULL DEFAULT 0," +
+                "  normal_losses INTEGER NOT NULL DEFAULT 0," +
+                "  clan_kills    INTEGER NOT NULL DEFAULT 0," +
+                "  clan_deaths   INTEGER NOT NULL DEFAULT 0," +
+                "  clan_wins     INTEGER NOT NULL DEFAULT 0," +
+                "  clan_losses   INTEGER NOT NULL DEFAULT 0," +
+                "  streak        INTEGER NOT NULL DEFAULT 0," +
+                "  PRIMARY KEY (room_name, uuid)" +
+                ");";
+
         String pluginSettings =
                 "CREATE TABLE IF NOT EXISTS plugin_settings (" +
                 "  setting_key   VARCHAR(64) PRIMARY KEY," +
@@ -117,9 +143,17 @@ public class SQLiteDatabase {
         String idxNormalDeaths = "CREATE INDEX IF NOT EXISTS idx_normal_deaths ON player_stats(normal_deaths DESC);";
         String idxClanDeaths   = "CREATE INDEX IF NOT EXISTS idx_clan_deaths   ON player_stats(clan_deaths   DESC);";
         String idxStreak       = "CREATE INDEX IF NOT EXISTS idx_streak        ON player_stats(streak        DESC);";
+        String roomIdxNormalWins   = "CREATE INDEX IF NOT EXISTS idx_room_normal_wins   ON room_stats(room_name, normal_wins   DESC);";
+        String roomIdxClanWins     = "CREATE INDEX IF NOT EXISTS idx_room_clan_wins     ON room_stats(room_name, clan_wins     DESC);";
+        String roomIdxNormalKills  = "CREATE INDEX IF NOT EXISTS idx_room_normal_kills  ON room_stats(room_name, normal_kills  DESC);";
+        String roomIdxClanKills    = "CREATE INDEX IF NOT EXISTS idx_room_clan_kills    ON room_stats(room_name, clan_kills    DESC);";
+        String roomIdxNormalDeaths = "CREATE INDEX IF NOT EXISTS idx_room_normal_deaths ON room_stats(room_name, normal_deaths DESC);";
+        String roomIdxClanDeaths   = "CREATE INDEX IF NOT EXISTS idx_room_clan_deaths   ON room_stats(room_name, clan_deaths   DESC);";
+        String roomIdxStreak       = "CREATE INDEX IF NOT EXISTS idx_room_streak        ON room_stats(room_name, streak        DESC);";
 
         try (Statement st = getConnection().createStatement()) {
             st.execute(playerStats);
+            st.execute(roomStats);
             st.execute(pluginSettings);
             st.execute(idxNormalWins);
             st.execute(idxClanWins);
@@ -128,6 +162,13 @@ public class SQLiteDatabase {
             st.execute(idxNormalDeaths);
             st.execute(idxClanDeaths);
             st.execute(idxStreak);
+            st.execute(roomIdxNormalWins);
+            st.execute(roomIdxClanWins);
+            st.execute(roomIdxNormalKills);
+            st.execute(roomIdxClanKills);
+            st.execute(roomIdxNormalDeaths);
+            st.execute(roomIdxClanDeaths);
+            st.execute(roomIdxStreak);
         } catch (SQLException e) {
             plugin.getLogger().severe("Error creating tables/indexes: " + e.getMessage());
         }
@@ -201,35 +242,58 @@ public class SQLiteDatabase {
      * @param column     Column to increment (validated by callers)
      */
     public void incrementStat(String uuid, String playerName, String column) {
+        incrementStat(uuid, playerName, column, null);
+    }
+
+    public void incrementStat(String uuid, String playerName, String column, String roomName) {
         if (uuid == null || column == null) return;
+        if (roomName != null && roomName.trim().isEmpty()) {
+            roomName = null;
+        }
 
         // Ensure the row exists without touching existing values
-        String upsertRow =
-                "INSERT INTO player_stats (uuid, name) VALUES (?, ?)" +
-                " ON CONFLICT(uuid) DO UPDATE SET name = excluded.name";
+        String upsertRow = roomName == null
+                ? "INSERT INTO player_stats (uuid, name) VALUES (?, ?)" +
+                  " ON CONFLICT(uuid) DO UPDATE SET name = excluded.name"
+                : "INSERT INTO room_stats (room_name, uuid, name) VALUES (?, ?, ?)" +
+                  " ON CONFLICT(room_name, uuid) DO UPDATE SET name = excluded.name";
 
         // Then increment the target column atomically
-        String increment = "UPDATE player_stats SET " + column + " = " + column + " + 1 WHERE uuid = ?";
+        String increment = roomName == null
+                ? "UPDATE player_stats SET " + column + " = " + column + " + 1 WHERE uuid = ?"
+                : "UPDATE room_stats SET " + column + " = " + column + " + 1 WHERE room_name = ? AND uuid = ?";
 
-        Connection conn = getConnection();
-        if (conn == null) return;
-        try {
-            conn.setAutoCommit(false);
-            try (PreparedStatement ps1 = conn.prepareStatement(upsertRow)) {
-                ps1.setString(1, uuid);
-                ps1.setString(2, playerName != null ? playerName : "Unknown");
-                ps1.executeUpdate();
+        synchronized (dbLock) {
+            Connection conn = getConnection();
+            if (conn == null) return;
+            try {
+                conn.setAutoCommit(false);
+                try (PreparedStatement ps1 = conn.prepareStatement(upsertRow)) {
+                    ps1.setString(1, uuid);
+                    if (roomName == null) {
+                        ps1.setString(2, playerName != null ? playerName : "Unknown");
+                    } else {
+                        ps1.setString(2, roomName.toLowerCase());
+                        ps1.setString(3, playerName != null ? playerName : "Unknown");
+                    }
+                    ps1.executeUpdate();
+                }
+                try (PreparedStatement ps2 = conn.prepareStatement(increment)) {
+                    if (roomName == null) {
+                        ps2.setString(1, uuid);
+                    } else {
+                        ps2.setString(1, roomName.toLowerCase());
+                        ps2.setString(2, uuid);
+                    }
+                    ps2.executeUpdate();
+                }
+                conn.commit();
+            } catch (SQLException e) {
+                tryRollback(conn);
+                plugin.getLogger().warning("Error incrementing stat '" + column + "': " + e.getMessage());
+            } finally {
+                tryRestoreAutoCommit(conn);
             }
-            try (PreparedStatement ps2 = conn.prepareStatement(increment)) {
-                ps2.setString(1, uuid);
-                ps2.executeUpdate();
-            }
-            conn.commit();
-        } catch (SQLException e) {
-            tryRollback(conn);
-            plugin.getLogger().warning("Error incrementing stat '" + column + "': " + e.getMessage());
-        } finally {
-            tryRestoreAutoCommit(conn);
         }
     }
 
@@ -237,33 +301,57 @@ public class SQLiteDatabase {
      * Sets a stat column to a specific value (e.g. streak reset to 0).
      */
     public void setStat(String uuid, String playerName, String column, int value) {
+        setStat(uuid, playerName, column, value, null);
+    }
+
+    public void setStat(String uuid, String playerName, String column, int value, String roomName) {
         if (uuid == null || column == null) return;
+        if (roomName != null && roomName.trim().isEmpty()) {
+            roomName = null;
+        }
 
-        String upsertRow =
-                "INSERT INTO player_stats (uuid, name) VALUES (?, ?)" +
-                " ON CONFLICT(uuid) DO UPDATE SET name = excluded.name";
-        String update = "UPDATE player_stats SET " + column + " = ? WHERE uuid = ?";
+        String upsertRow = roomName == null
+                ? "INSERT INTO player_stats (uuid, name) VALUES (?, ?)" +
+                  " ON CONFLICT(uuid) DO UPDATE SET name = excluded.name"
+                : "INSERT INTO room_stats (room_name, uuid, name) VALUES (?, ?, ?)" +
+                  " ON CONFLICT(room_name, uuid) DO UPDATE SET name = excluded.name";
+        String update = roomName == null
+                ? "UPDATE player_stats SET " + column + " = ? WHERE uuid = ?"
+                : "UPDATE room_stats SET " + column + " = ? WHERE room_name = ? AND uuid = ?";
 
-        Connection conn = getConnection();
-        if (conn == null) return;
-        try {
-            conn.setAutoCommit(false);
-            try (PreparedStatement ps1 = conn.prepareStatement(upsertRow)) {
-                ps1.setString(1, uuid);
-                ps1.setString(2, playerName != null ? playerName : "Unknown");
-                ps1.executeUpdate();
+        synchronized (dbLock) {
+            Connection conn = getConnection();
+            if (conn == null) return;
+            try {
+                conn.setAutoCommit(false);
+                try (PreparedStatement ps1 = conn.prepareStatement(upsertRow)) {
+                    ps1.setString(1, uuid);
+                    if (roomName == null) {
+                        ps1.setString(2, playerName != null ? playerName : "Unknown");
+                    } else {
+                        ps1.setString(2, roomName.toLowerCase());
+                        ps1.setString(3, playerName != null ? playerName : "Unknown");
+                    }
+                    ps1.executeUpdate();
+                }
+                try (PreparedStatement ps2 = conn.prepareStatement(update)) {
+                    if (roomName == null) {
+                        ps2.setInt(1, value);
+                        ps2.setString(2, uuid);
+                    } else {
+                        ps2.setInt(1, value);
+                        ps2.setString(2, roomName.toLowerCase());
+                        ps2.setString(3, uuid);
+                    }
+                    ps2.executeUpdate();
+                }
+                conn.commit();
+            } catch (SQLException e) {
+                tryRollback(conn);
+                plugin.getLogger().warning("Error setting stat '" + column + "': " + e.getMessage());
+            } finally {
+                tryRestoreAutoCommit(conn);
             }
-            try (PreparedStatement ps2 = conn.prepareStatement(update)) {
-                ps2.setInt(1, value);
-                ps2.setString(2, uuid);
-                ps2.executeUpdate();
-            }
-            conn.commit();
-        } catch (SQLException e) {
-            tryRollback(conn);
-            plugin.getLogger().warning("Error setting stat '" + column + "': " + e.getMessage());
-        } finally {
-            tryRestoreAutoCommit(conn);
         }
     }
 
@@ -274,11 +362,19 @@ public class SQLiteDatabase {
         incrementStat(uuid, playerName, "streak");
     }
 
+    public void incrementStreak(String uuid, String playerName, String roomName) {
+        incrementStat(uuid, playerName, "streak", roomName);
+    }
+
     /**
      * Resets the streak to 0.
      */
     public void resetStreak(String uuid, String playerName) {
         setStat(uuid, playerName, "streak", 0);
+    }
+
+    public void resetStreak(String uuid, String playerName, String roomName) {
+        setStat(uuid, playerName, "streak", 0, roomName);
     }
 
     // Leaderboard queries
@@ -288,22 +384,31 @@ public class SQLiteDatabase {
      * Only rows with name IS NOT NULL are included.
      */
     public List<TopEntry> queryTop(String column, int limit) {
+        return queryTop(column, limit, null);
+    }
+
+    public List<TopEntry> queryTop(String column, int limit, String roomName) {
         List<TopEntry> result = new ArrayList<>();
-        String query =
-                "SELECT name, " + column + " AS val" +
-                " FROM player_stats" +
-                " WHERE name IS NOT NULL AND " + column + " > 0" +
-                " ORDER BY " + column + " DESC, name ASC" +
-                " LIMIT ?";
-        try (PreparedStatement ps = getConnection().prepareStatement(query)) {
-            ps.setInt(1, limit);
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    result.add(new TopEntry(rs.getString("name"), rs.getInt("val")));
+        boolean roomScoped = roomName != null && !roomName.trim().isEmpty();
+        String query = roomScoped
+                ? "SELECT name, " + column + " AS val FROM room_stats WHERE room_name = ? AND name IS NOT NULL AND " + column + " > 0 ORDER BY " + column + " DESC, name ASC LIMIT ?"
+                : "SELECT name, " + column + " AS val FROM player_stats WHERE name IS NOT NULL AND " + column + " > 0 ORDER BY " + column + " DESC, name ASC LIMIT ?";
+        synchronized (dbLock) {
+            try (PreparedStatement ps = getConnection().prepareStatement(query)) {
+                if (roomScoped) {
+                    ps.setString(1, roomName.toLowerCase());
+                    ps.setInt(2, limit);
+                } else {
+                    ps.setInt(1, limit);
                 }
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        result.add(new TopEntry(rs.getString("name"), rs.getInt("val")));
+                    }
+                }
+            } catch (SQLException e) {
+                plugin.getLogger().warning("Error querying leaderboard '" + column + "': " + e.getMessage());
             }
-        } catch (SQLException e) {
-            plugin.getLogger().warning("Error querying leaderboard '" + column + "': " + e.getMessage());
         }
         return result;
     }
@@ -315,28 +420,39 @@ public class SQLiteDatabase {
      * the player has no data yet.
      */
     public StatRow loadStats(String uuid) {
+        return loadStats(uuid, null);
+    }
+
+    public StatRow loadStats(String uuid, String roomName) {
         StatRow row = new StatRow();
-        String query =
-                "SELECT normal_kills, normal_deaths, normal_wins, normal_losses," +
-                "       clan_kills, clan_deaths, clan_wins, clan_losses, streak" +
-                " FROM player_stats WHERE uuid = ?";
-        try (PreparedStatement ps = getConnection().prepareStatement(query)) {
-            ps.setString(1, uuid);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    row.normalKills  = rs.getInt("normal_kills");
-                    row.normalDeaths = rs.getInt("normal_deaths");
-                    row.normalWins   = rs.getInt("normal_wins");
-                    row.normalLosses = rs.getInt("normal_losses");
-                    row.clanKills    = rs.getInt("clan_kills");
-                    row.clanDeaths   = rs.getInt("clan_deaths");
-                    row.clanWins     = rs.getInt("clan_wins");
-                    row.clanLosses   = rs.getInt("clan_losses");
-                    row.streak       = rs.getInt("streak");
+        boolean roomScoped = roomName != null && !roomName.trim().isEmpty();
+        String query = roomScoped
+                ? "SELECT normal_kills, normal_deaths, normal_wins, normal_losses, clan_kills, clan_deaths, clan_wins, clan_losses, streak FROM room_stats WHERE room_name = ? AND uuid = ?"
+                : "SELECT normal_kills, normal_deaths, normal_wins, normal_losses, clan_kills, clan_deaths, clan_wins, clan_losses, streak FROM player_stats WHERE uuid = ?";
+        synchronized (dbLock) {
+            try (PreparedStatement ps = getConnection().prepareStatement(query)) {
+                if (roomScoped) {
+                    ps.setString(1, roomName.toLowerCase());
+                    ps.setString(2, uuid);
+                } else {
+                    ps.setString(1, uuid);
                 }
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        row.normalKills  = rs.getInt("normal_kills");
+                        row.normalDeaths = rs.getInt("normal_deaths");
+                        row.normalWins   = rs.getInt("normal_wins");
+                        row.normalLosses = rs.getInt("normal_losses");
+                        row.clanKills    = rs.getInt("clan_kills");
+                        row.clanDeaths   = rs.getInt("clan_deaths");
+                        row.clanWins     = rs.getInt("clan_wins");
+                        row.clanLosses   = rs.getInt("clan_losses");
+                        row.streak       = rs.getInt("streak");
+                    }
+                }
+            } catch (SQLException e) {
+                plugin.getLogger().warning("Error loading stats for " + uuid + ": " + e.getMessage());
             }
-        } catch (SQLException e) {
-            plugin.getLogger().warning("Error loading stats for " + uuid + ": " + e.getMessage());
         }
         return row;
     }
@@ -348,25 +464,29 @@ public class SQLiteDatabase {
         String query =
                 "INSERT INTO plugin_settings(setting_key, setting_value) VALUES(?, ?)" +
                 " ON CONFLICT(setting_key) DO UPDATE SET setting_value = excluded.setting_value";
-        try (PreparedStatement ps = getConnection().prepareStatement(query)) {
-            ps.setString(1, key);
-            ps.setString(2, value);
-            ps.executeUpdate();
-        } catch (SQLException e) {
-            plugin.getLogger().warning("Could not save setting '" + key + "': " + e.getMessage());
+        synchronized (dbLock) {
+            try (PreparedStatement ps = getConnection().prepareStatement(query)) {
+                ps.setString(1, key);
+                ps.setString(2, value);
+                ps.executeUpdate();
+            } catch (SQLException e) {
+                plugin.getLogger().warning("Could not save setting '" + key + "': " + e.getMessage());
+            }
         }
     }
 
     public String getSetting(String key) {
         if (key == null || key.trim().isEmpty()) return null;
         String query = "SELECT setting_value FROM plugin_settings WHERE setting_key = ?";
-        try (PreparedStatement ps = getConnection().prepareStatement(query)) {
-            ps.setString(1, key);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) return rs.getString("setting_value");
+        synchronized (dbLock) {
+            try (PreparedStatement ps = getConnection().prepareStatement(query)) {
+                ps.setString(1, key);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) return rs.getString("setting_value");
+                }
+            } catch (SQLException e) {
+                plugin.getLogger().warning("Could not read setting '" + key + "': " + e.getMessage());
             }
-        } catch (SQLException e) {
-            plugin.getLogger().warning("Could not read setting '" + key + "': " + e.getMessage());
         }
         return null;
     }
@@ -385,15 +505,17 @@ public class SQLiteDatabase {
         if (betterUuid == null || targetUuid == null || roomName == null) return;
         String query = "INSERT INTO player_bets (better_uuid, better_name, target_uuid, room_name, placed_at)" +
                 " VALUES (?, ?, ?, ?, ?)";
-        try (PreparedStatement ps = getConnection().prepareStatement(query)) {
-            ps.setString(1, betterUuid);
-            ps.setString(2, betterName != null ? betterName : "Unknown");
-            ps.setString(3, targetUuid);
-            ps.setString(4, roomName.toLowerCase());
-            ps.setLong(5, System.currentTimeMillis());
-            ps.executeUpdate();
-        } catch (SQLException e) {
-            plugin.getLogger().warning("Could not save bet: " + e.getMessage());
+        synchronized (dbLock) {
+            try (PreparedStatement ps = getConnection().prepareStatement(query)) {
+                ps.setString(1, betterUuid);
+                ps.setString(2, betterName != null ? betterName : "Unknown");
+                ps.setString(3, targetUuid);
+                ps.setString(4, roomName.toLowerCase());
+                ps.setLong(5, System.currentTimeMillis());
+                ps.executeUpdate();
+            } catch (SQLException e) {
+                plugin.getLogger().warning("Could not save bet: " + e.getMessage());
+            }
         }
     }
 
@@ -407,20 +529,22 @@ public class SQLiteDatabase {
         List<BetRow> result = new ArrayList<>();
         if (roomName == null) return result;
         String query = "SELECT id, better_uuid, better_name, target_uuid FROM player_bets WHERE room_name = ?";
-        try (PreparedStatement ps = getConnection().prepareStatement(query)) {
-            ps.setString(1, roomName.toLowerCase());
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    BetRow row = new BetRow();
-                    row.id          = rs.getLong("id");
-                    row.betterUuid  = rs.getString("better_uuid");
-                    row.betterName  = rs.getString("better_name");
-                    row.targetUuid  = rs.getString("target_uuid");
-                    result.add(row);
+        synchronized (dbLock) {
+            try (PreparedStatement ps = getConnection().prepareStatement(query)) {
+                ps.setString(1, roomName.toLowerCase());
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        BetRow row = new BetRow();
+                        row.id          = rs.getLong("id");
+                        row.betterUuid  = rs.getString("better_uuid");
+                        row.betterName  = rs.getString("better_name");
+                        row.targetUuid  = rs.getString("target_uuid");
+                        result.add(row);
+                    }
                 }
+            } catch (SQLException e) {
+                plugin.getLogger().warning("Could not load bets for room '" + roomName + "': " + e.getMessage());
             }
-        } catch (SQLException e) {
-            plugin.getLogger().warning("Could not load bets for room '" + roomName + "': " + e.getMessage());
         }
         return result;
     }
@@ -433,11 +557,13 @@ public class SQLiteDatabase {
     public void removeBetsByRoom(String roomName) {
         if (roomName == null) return;
         String query = "DELETE FROM player_bets WHERE room_name = ?";
-        try (PreparedStatement ps = getConnection().prepareStatement(query)) {
-            ps.setString(1, roomName.toLowerCase());
-            ps.executeUpdate();
-        } catch (SQLException e) {
-            plugin.getLogger().warning("Could not remove bets for room '" + roomName + "': " + e.getMessage());
+        synchronized (dbLock) {
+            try (PreparedStatement ps = getConnection().prepareStatement(query)) {
+                ps.setString(1, roomName.toLowerCase());
+                ps.executeUpdate();
+            } catch (SQLException e) {
+                plugin.getLogger().warning("Could not remove bets for room '" + roomName + "': " + e.getMessage());
+            }
         }
     }
 

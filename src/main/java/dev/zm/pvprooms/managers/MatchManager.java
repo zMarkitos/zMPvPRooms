@@ -105,6 +105,7 @@ public class MatchManager {
             } else {
                 room.broadcast(plugin.getConfigManager().getMessage("room_joined_broadcast")
                         .replace("%player%", player.getName())
+                        .replace("%room%", room.getName())
                         .replace("%current%", String.valueOf(room.getPlayers().size()))
                         .replace("%max%", String.valueOf(room.getCapacity())));
             }
@@ -299,7 +300,7 @@ public class MatchManager {
         final UUID killerId = killer != null ? killer.getUniqueId() : null;
         final String killerName = killer != null ? killer.getName() : null;
         plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
-            updateKillDeathStats(victimId, victimName, killerId, killerName, room.getType());
+            updateKillDeathStats(victimId, victimName, killerId, killerName, room.getType(), room);
             // Invalidate personal stat cache so placeholders reflect the new values immediately.
             RoomsPlaceholderExpansion exp = plugin.getPlaceholderExpansion();
             if (exp != null) {
@@ -340,7 +341,7 @@ public class MatchManager {
         final UUID killerId = killer != null ? killer.getUniqueId() : null;
         final String killerName = killer != null ? killer.getName() : null;
         plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
-            updateKillDeathStats(victimId, victimName, killerId, killerName, room.getType());
+            updateKillDeathStats(victimId, victimName, killerId, killerName, room.getType(), room);
             // Invalidate personal stat cache so placeholders reflect the new values immediately.
             RoomsPlaceholderExpansion exp = plugin.getPlaceholderExpansion();
             if (exp != null) {
@@ -383,6 +384,7 @@ public class MatchManager {
             if (room.isChatEnabled()) {
                 room.broadcast(plugin.getConfigManager().getMessage("room_left_broadcast")
                         .replace("%player%", player.getName())
+                        .replace("%room%", room.getName())
                         .replace("%current%", String.valueOf(room.getPlayers().size()))
                         .replace("%max%", String.valueOf(room.getCapacity())));
             }
@@ -404,7 +406,7 @@ public class MatchManager {
                 room.broadcast(plugin.getConfigManager().getMessage("match_player_left_lose")
                         .replace("%player%", player.getName()));
             }
-            resetStreak(player);
+            resetStreak(player, room);
             evaluateMatchEnd(room);
         }
     }
@@ -445,12 +447,21 @@ public class MatchManager {
             return false;
         }
         Map<UUID, Integer> teams = roomTeams.get(room.getName().toLowerCase());
-        if (teams == null) {
+        if (teams != null) {
+            Integer firstTeam = teams.get(first);
+            Integer secondTeam = teams.get(second);
+            if (firstTeam != null && firstTeam.equals(secondTeam)) {
+                return true;
+            }
+        }
+        if (plugin.getClanProvider() == null) {
             return false;
         }
-        Integer firstTeam = teams.get(first);
-        Integer secondTeam = teams.get(second);
-        return firstTeam != null && firstTeam.equals(secondTeam);
+        Player firstPlayer = Bukkit.getPlayer(first);
+        Player secondPlayer = Bukkit.getPlayer(second);
+        return firstPlayer != null
+                && secondPlayer != null
+                && plugin.getClanProvider().areInSameClan(firstPlayer, secondPlayer);
     }
 
     public void removeSpectator(Player player, Room room, boolean teleportToReturnSpawn) {
@@ -933,23 +944,23 @@ public class MatchManager {
             // Streak updates first so they are written before wins/losses.
             for (UUID uuid : winners) {
                 Player p = Bukkit.getPlayer(uuid);
-                if (p != null) increaseStreak(p);
+                if (p != null) increaseStreak(p, room);
             }
             for (UUID uuid : losers) {
                 Player p = Bukkit.getPlayer(uuid);
-                if (p != null) resetStreak(p);
+                if (p != null) resetStreak(p, room);
             }
             // Win / loss counters.
             for (UUID uuid : winners) {
                 Player player = Bukkit.getPlayer(uuid);
                 if (player != null) {
-                    updateStats(player, room.getType(), true);
+                    updateStats(player, room.getType(), true, room);
                 }
             }
             for (UUID uuid : losers) {
                 Player player = Bukkit.getPlayer(uuid);
                 if (player != null) {
-                    updateStats(player, room.getType(), false);
+                    updateStats(player, room.getType(), false, room);
                 }
             }
             // Invalidate personal stat caches so placeholders show updated values
@@ -958,6 +969,8 @@ public class MatchManager {
             if (exp != null) {
                 for (UUID uuid : winners) exp.invalidatePlayerCache(uuid);
                 for (UUID uuid : losers)  exp.invalidatePlayerCache(uuid);
+                // Also force a refresh of the top leaderboards immediately so they don't stay stale for 30 seconds
+                exp.forceTopRefresh();
             }
         });
 
@@ -1344,37 +1357,51 @@ public class MatchManager {
      */
     private void updateKillDeathStats(UUID victimId, String victimName,
                                       UUID killerId, String killerName,
-                                      RoomType type) {
+                                      RoomType type, Room room) {
         if (plugin.getDatabase() == null || victimId == null) return;
 
         String deathCol = type == RoomType.CLAN ? "clan_deaths" : "normal_deaths";
         plugin.getDatabase().incrementStat(
                 victimId.toString(), victimName, deathCol);
+        if (room != null) {
+            plugin.getDatabase().incrementStat(
+                    victimId.toString(), victimName, deathCol, room.getName());
+        }
 
         if (killerId != null && !killerId.equals(victimId)) {
             String killCol = type == RoomType.CLAN ? "clan_kills" : "normal_kills";
             plugin.getDatabase().incrementStat(
                     killerId.toString(), killerName, killCol);
+            if (room != null) {
+                plugin.getDatabase().incrementStat(
+                        killerId.toString(), killerName, killCol, room.getName());
+            }
         }
     }
 
     /** Resets the win streak to 0. Must be called from an async thread. */
-    private void resetStreak(Player player) {
+    private void resetStreak(Player player, Room room) {
         if (player == null || plugin.getDatabase() == null) return;
         plugin.getDatabase().resetStreak(player.getUniqueId().toString(), player.getName());
+        if (room != null) {
+            plugin.getDatabase().resetStreak(player.getUniqueId().toString(), player.getName(), room.getName());
+        }
     }
 
     /** Increments the win streak by 1. Must be called from an async thread. */
-    private void increaseStreak(Player player) {
+    private void increaseStreak(Player player, Room room) {
         if (player == null || plugin.getDatabase() == null) return;
         plugin.getDatabase().incrementStreak(player.getUniqueId().toString(), player.getName());
+        if (room != null) {
+            plugin.getDatabase().incrementStreak(player.getUniqueId().toString(), player.getName(), room.getName());
+        }
     }
 
     /**
      * Increments win or loss counter for the player.
      * Must be called from an async thread.
      */
-    private void updateStats(Player player, RoomType type, boolean isWin) {
+    private void updateStats(Player player, RoomType type, boolean isWin, Room room) {
         if (player == null || plugin.getDatabase() == null) return;
 
         String col = isWin
@@ -1382,6 +1409,9 @@ public class MatchManager {
                 : (type == RoomType.CLAN ? "clan_losses" : "normal_losses");
 
         plugin.getDatabase().incrementStat(player.getUniqueId().toString(), player.getName(), col);
+        if (room != null) {
+            plugin.getDatabase().incrementStat(player.getUniqueId().toString(), player.getName(), col, room.getName());
+        }
     }
 
     private void cancelCountdown(String roomName) {

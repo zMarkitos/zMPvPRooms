@@ -51,8 +51,8 @@ messages:
   room_leave_title: "&c&lSaliste de la Sala"
   room_leave_subtitle: "&7Abandonaste &f%room%"
   room_leave_actionbar: "&7Ya no estas en &f%room%"
-  room_joined_broadcast: "&a%player% &7se unio a la sala. &8(&e%current%&8/&e%max%&8)"
-  room_left_broadcast: "&c%player% &7salio de la sala. &8(&e%current%&8/&e%max%&8)"
+  room_joined_broadcast: "&a%player% &7se unio a la sala &e%room%&7. &8(&e%current%&8/&e%max%&8)"
+  room_left_broadcast: "&c%player% &7salio de la sala &e%room%&7. &8(&e%current%&8/&e%max%&8)"
   clan_room_joined_broadcast: "&a%player% &7del clan &6%clan% &7se unio a la sala &e%room%&7. &8(&e%current%&8/&e%max%&8)"
 
   # Countdown / inicio

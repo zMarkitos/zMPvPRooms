@@ -6,7 +6,7 @@
 
     <groupId>dev.zm.pvprooms</groupId>
     <artifactId>zMPvPRooms</artifactId>
-    <version>1.3.1</version>
+    <version>1.4.0</version>
     <packaging>jar</packaging>
 
     <name>zMPvPRooms</name>
@@ -90,6 +90,14 @@
             <artifactId>bstats-bukkit</artifactId>
             <version>3.2.1</version>
             <scope>compile</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apex.development</groupId>
+            <artifactId>api</artifactId>
+            <version>0.5.6</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/libs/ApexClan-API-v0.5.6.jar</systemPath>
         </dependency>
     </dependencies>
 
