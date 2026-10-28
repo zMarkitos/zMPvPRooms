@@ -36,12 +36,26 @@ A premium PvP arena system for Minecraft servers. Create classic duel rooms and 
 
 The plugin supports these clan providers:
 
-* `UltimateClans`
-* `uClans`
+* `zMClans`
+* `UltimateClans` (v9) and `uClans` (v8)
 * `ByteClans`
 * `ApexClan`
 
-The active provider is selected automatically by the internal priority list in the config.
+The active provider is selected automatically from `hooks.clans.provider-priority` in `config.yml`.
+The UltimateClans integration uses the public API subset shared by v8 and v9, so both plugin generations are supported.
+
+## Building
+
+The zMClans API is a `provided` dependency. Install it in the local Maven repository before compiling:
+
+```bash
+mvn install:install-file \
+  -Dfile=zMClans-1.1.0.jar \
+  -DgroupId=dev.zm.clan \
+  -DartifactId=zMClans \
+  -Dversion=1.1.0 \
+  -Dpackaging=jar
+```
 
 ## Installation
 
@@ -54,6 +68,16 @@ The active provider is selected automatically by the internal priority list in t
 * `/zmrooms create <name>` - Creates a new arena with the given name.
 * `/zmrooms edit` - Opens the visual arena creator GUI.
 * `/zmrooms setspawn` - Sets the global return spawn for all matches.
+
+### First-Time Room Setup
+
+1. Create a WorldGuard region with the same name as the room (`/rg define <room>`).
+2. Run `/zmrooms create <room> <NORMAL|CLAN>` inside that region.
+3. Stand at the first team's spawn and run `/zmrooms pos1 <room>`.
+4. Stand at the second team's spawn and run `/zmrooms pos2 <room>`.
+5. Optional: run `/zmrooms setspectate <room>` for a spectator spawn and `/zmrooms setspawn` for the global return spawn.
+
+The plugin sends a checklist with the exact missing commands whenever a room is created, joined while incomplete, or fails to start.
 
 ## PlaceholderAPI
 

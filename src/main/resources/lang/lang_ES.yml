@@ -29,11 +29,13 @@ messages:
   room_deleted: "&cSala &f%room% &celiminada correctamente."
   room_not_waiting: "&cLa sala no esta en estado de espera."
   room_full: "&cLa sala esta llena."
-  room_not_configured: "&cLa sala no esta bien configurada. Configura arena y spawns."
+  room_not_configured: "&cLa sala &f%room% &cno está lista para iniciar. Revisa la configuración con &f/zmrooms edit %room%&c."
+  room_not_ready_for_players: "&cEsta sala aún no está lista para jugar. Avisa a un administrador."
+  room_create_region_missing: "&cNo se creó la sala &f%room%&c: no existe una región WorldGuard con ese nombre en este mundo. Selecciona la zona con la varita, usa &f/rg define %room% &cy vuelve a ejecutar &f/zmrooms create %room% %type%&c."
   already_in_room: "&cYa estas dentro de una sala o partida."
   invalid_type: "&cTipo de sala invalido. Usa: NORMAL o CLAN."
   not_in_room: "&cNo estas dentro de ninguna sala."
-  room_world_mismatch: "&cDebes ejecutar este comando en el mundo de la arena: &f%world%"
+  room_world_mismatch: "&cLa posición no se guardó: debes estar en el mundo de la arena (&f%world%&c)."
 
   # Protección dentro de sala
   arena_in_use: "&cHay un combate en curso en esta arena."
@@ -57,6 +59,7 @@ messages:
 
   # Countdown / inicio
   match_countdown_start: "&eLa partida comenzara en &f%time%s&e."
+  match_countdown_title: "&e%time%"
   match_countdown_cancelled: "&cConteo cancelado: faltan jugadores."
   match_starting_actionbar: "&7Iniciando en: &e%time%s"
   match_starting_chat: "&7Iniciando en: &e%time%"
@@ -119,6 +122,7 @@ messages:
   spectate_left: "&aHas salido del modo espectador."
   spectate_not_in_mode: "&cNo estas en modo espectador."
   spectate_spawn_missing: "&cEsta sala no tiene punto de espectador configurado."
+  spectate_spawn_missing_setup: "&cEsta sala no tiene punto de espectador configurado. Usa &f/zmrooms setspectate %room%&c."
   spectate_room_not_active: "&cSolo puedes espectar salas en STARTING/PLAYING."
   spectate_cannot_leave: "&cNo puedes salir de la region mientras espectas."
 
@@ -147,12 +151,19 @@ messages:
   set_spectate_success: "&aPosicion de espectador guardada para &f%room%&a."
   setspawn_success: "&aSpawn global configurado correctamente."
   reload_success: "&aConfiguracion, salas e idiomas recargados."
-  setup_hint: "&eConfigura esta sala con: &f/zmrooms pos1 %room%&e, &f/zmrooms pos2 %room%&e, &f/zmrooms setspectate %room%&e."
+  setup_missing_header: "&cLa sala &f%room% &cno está lista. Esto falta por configurar:"
+  setup_missing_arena: "&8  • &cArena: &7selecciona la zona con la varita y usa &f/rg define %room%&7; luego &f/zmrooms save arena %room%"
+  setup_missing_spawn1: "&8  • &cPosición 1: &7colócate en el punto y usa &f/zmrooms pos1 %room%"
+  setup_missing_spawn2: "&8  • &cPosición 2: &7colócate en el punto y usa &f/zmrooms pos2 %room%"
+  setup_missing_world: "&8  • &cPosiciones: &7deben estar en el mundo de la arena. Vuelve y usa &f/zmrooms pos1 %room% &7y &f/zmrooms pos2 %room%"
+  setup_optional_spectator: "&8  • &7Espectadores (opcional): &f/zmrooms setspectate %room%"
+  setup_optional_return_spawn: "&8  • &7Spawn de salida (si aún no lo configuraste): &f/zmrooms setspawn"
+  setup_ready: "&aSala &f%room% &alista para iniciar."
 
   save_success: "&aGuardado &f%mode% &aaplicado para &f%room%&a. Huecos detectados: &e%detected%&a."
-  save_room_required: "&cDebes indicar una sala o estar editando/dentro de una."
-  wg_required: "&cWorldGuard es requerido para este guardado."
-  wg_region_not_found: "&cNo se encontro la region de WorldGuard &f%room%&c en este mundo."
+  save_room_required: "&cIndica una sala o entra en ella. Uso: &f/zmrooms save <positions|arena|all> <sala>&c."
+  wg_required: "&cWorldGuard es necesario para crear y guardar salas. Instálalo y activa &fhooks.worldguard&c en config.yml."
+  wg_region_not_found: "&cNo se encontró la región WorldGuard &f%room%&c en este mundo. Verifica que exista y ejecuta &f/zmrooms save arena %room%&c."
   wg_region_linked: "&7Region vinculada: &a%room%"
 
   # Bloques personalizados
@@ -227,6 +238,7 @@ guis:
     - " &#FF5018&l| &fCierra este menu"
     - ""
     - "&#FF5018■ Click para salir"
+  bet_player_click: "&7Clic para apostar por este jugador"
 
   room_menu_title: "&8Room &7| &d%room%"
   editor_title: "&8Editando &7| &d%room%"

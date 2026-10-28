@@ -5,9 +5,10 @@ import dev.zm.pvprooms.commands.MainTabCompleter;
 import dev.zm.pvprooms.database.SQLiteDatabase;
 import dev.zm.pvprooms.hooks.RoomsPlaceholderExpansion;
 import dev.zm.pvprooms.hooks.clans.ApexClanLoader;
+import dev.zm.pvprooms.hooks.clans.ByteClansLoader;
 import dev.zm.pvprooms.hooks.clans.ClanProvider;
 import dev.zm.pvprooms.hooks.clans.UClansLoader;
-import dev.zm.pvprooms.hooks.clans.ByteClansLoader;
+import dev.zm.pvprooms.hooks.clans.ZMClansLoader;
 import dev.zm.pvprooms.hooks.worldguard.WorldGuardHook;
 import dev.zm.pvprooms.listeners.BetListener;
 import dev.zm.pvprooms.listeners.EditorListener;
@@ -26,15 +27,21 @@ import org.bukkit.World;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
+import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import dev.zm.pvprooms.utils.VersionChecker;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 import java.util.logging.Level;
 
 public final class ZMPvPRooms extends JavaPlugin {
+
+    private static final List<String> DEFAULT_CLAN_PRIORITY = List.of(
+            "zMClans", "UltimateClans", "uClans", "ByteClans", "ApexClan");
 
     private static ZMPvPRooms instance;
 
@@ -141,8 +148,9 @@ public final class ZMPvPRooms extends JavaPlugin {
     }
 
     private void loadConfigurations() {
-        getConfig().options().copyDefaults(true);
         saveDefaultConfig();
+        reloadConfig();
+        getConfig().options().copyDefaults(true);
         configManager = new ConfigManager(this);
     }
 
@@ -243,38 +251,71 @@ public final class ZMPvPRooms extends JavaPlugin {
     }
 
     private void setupClanHook() {
-        if (!getConfig().getBoolean("hooks.clans.enabled", true))
+        clanProvider = null;
+        if (!getConfig().getBoolean("hooks.clans.enabled", true)) {
             return;
-
-        // ApexClan gets first priority when present because it exposes the
-        // service-based API requested by the user.
-        if (getConfig().getBoolean("hooks.clans.apexclan", true)) {
-            try {
-                clanProvider = ApexClanLoader.tryLoad(getServer().getPluginManager(), getLogger());
-            } catch (NoClassDefFoundError ignored) {
-                getLogger().info("ApexClan API not found.");
-            }
         }
 
-        // Try ByteClans if enabled and ApexClan wasn't found.
-        if (clanProvider == null && getConfig().getBoolean("hooks.clans.byteclans", true)) {
-            try {
-                clanProvider = ByteClansLoader.tryLoad(getServer().getPluginManager(), getLogger());
-            } catch (NoClassDefFoundError ignored) {
-                getLogger().info("ByteClans API not found.");
+        PluginManager pluginManager = getServer().getPluginManager();
+        for (String providerId : resolveClanPriority()) {
+            clanProvider = tryLoadClanProvider(providerId, pluginManager);
+            if (clanProvider != null) {
+                return;
             }
+        }
+    }
+
+    private List<String> resolveClanPriority() {
+        List<String> configured = new ArrayList<>(
+                getConfig().getStringList("hooks.clans.provider-priority"));
+        for (String fallback : DEFAULT_CLAN_PRIORITY) {
+            if (configured.stream().noneMatch(id -> id != null && id.equalsIgnoreCase(fallback))) {
+                configured.add(fallback);
+            }
+        }
+        return configured;
+    }
+
+    private ClanProvider tryLoadClanProvider(String providerId, PluginManager pluginManager) {
+        if (providerId == null || providerId.isBlank()) {
+            return null;
         }
 
-        // If ByteClans wasn't found or wasn't enabled, fallback to UltimateClans.
-        if (clanProvider == null && getConfig().getBoolean("hooks.clans.ultimateclans", true)) {
-            try {
-                clanProvider = UClansLoader.tryLoad(getServer().getPluginManager(), getLogger());
-            } catch (NoClassDefFoundError ignored) {
-                // UltimateClans API classes are not on the classpath — plugin continues without
-                // clans.
-                getLogger().info("UltimateClans not found. Clan features will be disabled.");
+        String id = providerId.trim().toLowerCase(Locale.ROOT);
+        try {
+            switch (id) {
+                case "zmclans":
+                    return isProviderEnabled("hooks.clans.zmclans")
+                            ? ZMClansLoader.tryLoad(pluginManager, getLogger())
+                            : null;
+                case "ultimateclans":
+                case "uclans":
+                    return isProviderEnabled("hooks.clans.ultimateclans")
+                            ? UClansLoader.tryLoad(pluginManager, getLogger())
+                            : null;
+                case "byteclans":
+                    return isProviderEnabled("hooks.clans.byteclans")
+                            ? ByteClansLoader.tryLoad(pluginManager, getLogger())
+                            : null;
+                case "apexclan":
+                    return isProviderEnabled("hooks.clans.apexclan")
+                            ? ApexClanLoader.tryLoad(pluginManager, getLogger())
+                            : null;
+                default:
+                    getLogger().warning("Unknown clan provider in hooks.clans.provider-priority: " + providerId);
+                    return null;
             }
+        } catch (LinkageError error) {
+            getLogger().info("Clan provider " + providerId
+                    + " is not available on this server; skipping.");
+        } catch (RuntimeException error) {
+            getLogger().log(Level.WARNING, "Failed to load clan provider " + providerId + ".", error);
         }
+        return null;
+    }
+
+    private boolean isProviderEnabled(String path) {
+        return getConfig().getBoolean(path, true);
     }
 
     private void setupWorldGuardHook() {
@@ -288,8 +329,6 @@ public final class ZMPvPRooms extends JavaPlugin {
 
         worldGuardHook = new WorldGuardHook();
     }
-
-    // Accessors
 
     public static ZMPvPRooms getInstance() {
         return instance;
@@ -358,8 +397,6 @@ public final class ZMPvPRooms extends JavaPlugin {
         }
     }
 
-    // Return spawn (persisted in DB + config.yml)
-
     /**
      * Saves the return spawn to both config.yml and the database so it
      * survives server restarts regardless of how config is loaded.
@@ -368,7 +405,6 @@ public final class ZMPvPRooms extends JavaPlugin {
         if (location == null || location.getWorld() == null)
             return;
         getConfig().set("settings.return-spawn", location);
-        // saveConfig(); // Removed to prevent Bukkit from stripping config.yml comments
         if (database != null) {
             database.setSetting("return_spawn", serializeLocation(location));
         }

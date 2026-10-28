@@ -241,7 +241,20 @@ public class RoomManager {
     }
 
     public boolean isConfigured(Room room) {
-        return hasArena(room) && room.getSpawn1() != null && room.getSpawn2() != null;
+        if (room == null || room.getSpawn1() == null || room.getSpawn2() == null) {
+            return false;
+        }
+
+        Optional<WorldGuardHook.RegionBounds> bounds = getArenaBounds(room);
+        if (!bounds.isPresent()) {
+            return false;
+        }
+
+        String world = bounds.get().getWorldName();
+        return room.getSpawn1().getWorld() != null
+                && room.getSpawn2().getWorld() != null
+                && world.equals(room.getSpawn1().getWorld().getName())
+                && world.equals(room.getSpawn2().getWorld().getName());
     }
 
     public boolean hasArena(Room room) {

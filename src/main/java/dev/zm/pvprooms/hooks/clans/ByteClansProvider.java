@@ -2,16 +2,23 @@ package dev.zm.pvprooms.hooks.clans;
 
 import org.bukkit.entity.Player;
 
-import java.util.Collections;
+import java.lang.reflect.Method;
+import java.util.Collection;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class ByteClansProvider implements ClanProvider {
 
     private final Object api;
+    private final Method getMemberMethod;
+    private final Map<Class<?>, Map<String, Method>> methodCache = new ConcurrentHashMap<>();
 
-    public ByteClansProvider(Object api) {
+    public ByteClansProvider(Object api) throws NoSuchMethodException {
         this.api = api;
+        this.getMemberMethod = api.getClass().getMethod("getClanMemberOrNull", UUID.class);
     }
 
     @Override
@@ -21,23 +28,13 @@ public class ByteClansProvider implements ClanProvider {
 
     @Override
     public String getClanName(Player player) {
-        if (player == null || api == null) return null;
-        
+        if (player == null) {
+            return null;
+        }
         try {
-            Object member = api.getClass().getMethod("getClanMemberOrNull", java.util.UUID.class).invoke(api, player.getUniqueId());
-            if (member == null) return null;
-            
-            // Try to get clan
-            Object clan = member.getClass().getMethod("getClan").invoke(member);
-            if (clan == null) return null;
-            
-            // Try to get tag or name
-            try {
-                return (String) clan.getClass().getMethod("getTag").invoke(clan);
-            } catch (Exception e) {
-                return (String) clan.getClass().getMethod("getName").invoke(clan);
-            }
-        } catch (Exception e) {
+            Object clan = getClan(player);
+            return clan == null ? null : resolveClanLabel(clan);
+        } catch (ReflectiveOperationException ignored) {
             return null;
         }
     }
@@ -51,85 +48,117 @@ public class ByteClansProvider implements ClanProvider {
 
     @Override
     public boolean isClanLeader(Player player) {
-        if (player == null || api == null) return false;
-        
-        try {
-            Object member = api.getClass().getMethod("getClanMemberOrNull", java.util.UUID.class).invoke(api, player.getUniqueId());
-            if (member == null) return false;
-            
-            // Check role
-            Object role = member.getClass().getMethod("getRole").invoke(member);
-            if (role != null) {
-                String roleName = role.toString();
-                return roleName.equalsIgnoreCase("LEADER") || roleName.equalsIgnoreCase("OWNER");
-            }
-        } catch (Exception e) {
-            // Ignored
+        if (player == null) {
+            return false;
         }
-        return false;
+        try {
+            Object member = getMember(player);
+            if (member == null) {
+                return false;
+            }
+            Object role = invokeOptional(member, "getRole");
+            if (role == null) {
+                return false;
+            }
+            String roleName = role.toString();
+            return roleName.equalsIgnoreCase("LEADER") || roleName.equalsIgnoreCase("OWNER");
+        } catch (ReflectiveOperationException ignored) {
+            return false;
+        }
     }
 
     @Override
     public int getOnlineMembersCount(Player player) {
-        if (player == null || api == null) return 0;
-        
+        if (player == null) {
+            return 0;
+        }
         try {
-            Object member = api.getClass().getMethod("getClanMemberOrNull", java.util.UUID.class).invoke(api, player.getUniqueId());
-            if (member == null) return 0;
-            
-            Object clan = member.getClass().getMethod("getClan").invoke(member);
-            if (clan == null) return 0;
-            
-            java.util.Collection<?> onlineMembers = (java.util.Collection<?>) clan.getClass().getMethod("getOnlineMembers").invoke(clan);
-            return onlineMembers != null ? onlineMembers.size() : 0;
-        } catch (Exception e) {
+            Object clan = getClan(player);
+            if (clan == null) {
+                return 0;
+            }
+            Object onlineMembers = invokeOptional(clan, "getOnlineMembers");
+            return onlineMembers instanceof Collection<?> members ? members.size() : 0;
+        } catch (ReflectiveOperationException ignored) {
             return 0;
         }
     }
 
     @Override
     public Set<String> getAlliedClanNames(Player player) {
-        Set<String> allies = new HashSet<>();
-        if (player == null || api == null) return allies;
-        
+        if (player == null) {
+            return Set.of();
+        }
         try {
-            Object member = api.getClass().getMethod("getClanMemberOrNull", java.util.UUID.class).invoke(api, player.getUniqueId());
-            if (member == null) return allies;
-            
-            Object clan = member.getClass().getMethod("getClan").invoke(member);
-            if (clan == null) return allies;
-            
-            try {
-                java.util.Collection<?> alliances = (java.util.Collection<?>) clan.getClass().getMethod("getAllies").invoke(clan);
-                if (alliances != null) {
-                    for (Object ally : alliances) {
-                        try {
-                            String tag = (String) ally.getClass().getMethod("getTag").invoke(ally);
-                            if (tag != null) allies.add(tag);
-                        } catch (Exception ex) {
-                            String name = (String) ally.getClass().getMethod("getName").invoke(ally);
-                            if (name != null) allies.add(name);
-                        }
-                    }
+            Object clan = getClan(player);
+            if (clan == null) {
+                return Set.of();
+            }
+
+            Object alliances = invokeOptional(clan, "getAllies");
+            if (!(alliances instanceof Collection<?>)) {
+                alliances = invokeOptional(clan, "getAlliances");
+            }
+            if (!(alliances instanceof Collection<?> collection)) {
+                return Set.of();
+            }
+
+            Set<String> allies = new HashSet<>(collection.size());
+            for (Object ally : collection) {
+                if (ally == null) {
+                    continue;
                 }
-            } catch (Exception e) {
-                // If getAllies is not found or fails, try getAlliances()
-                java.util.Collection<?> alliances = (java.util.Collection<?>) clan.getClass().getMethod("getAlliances").invoke(clan);
-                if (alliances != null) {
-                    for (Object ally : alliances) {
-                        try {
-                            String tag = (String) ally.getClass().getMethod("getTag").invoke(ally);
-                            if (tag != null) allies.add(tag);
-                        } catch (Exception ex) {
-                            String name = (String) ally.getClass().getMethod("getName").invoke(ally);
-                            if (name != null) allies.add(name);
-                        }
-                    }
+                String label = resolveClanLabel(ally);
+                if (label != null) {
+                    allies.add(label);
                 }
             }
-        } catch (Exception e) {
-            // Ignored
+            return allies;
+        } catch (ReflectiveOperationException ignored) {
+            return Set.of();
         }
-        return allies;
+    }
+
+    private Object getMember(Player player) throws ReflectiveOperationException {
+        return getMemberMethod.invoke(api, player.getUniqueId());
+    }
+
+    private Object getClan(Player player) throws ReflectiveOperationException {
+        Object member = getMember(player);
+        if (member == null) {
+            return null;
+        }
+        return method(member, "getClan").invoke(member);
+    }
+
+    private String resolveClanLabel(Object clan) throws ReflectiveOperationException {
+        Object tag = invokeOptional(clan, "getTag");
+        if (tag instanceof String value && !value.trim().isEmpty()) {
+            return value;
+        }
+        Object name = invokeOptional(clan, "getName");
+        if (name instanceof String value && !value.trim().isEmpty()) {
+            return value;
+        }
+        return null;
+    }
+
+    private Object invokeOptional(Object target, String methodName) throws ReflectiveOperationException {
+        try {
+            return method(target, methodName).invoke(target);
+        } catch (NoSuchMethodException ignored) {
+            return null;
+        }
+    }
+
+    private Method method(Object target, String methodName) throws NoSuchMethodException {
+        Map<String, Method> methods = methodCache.computeIfAbsent(
+                target.getClass(), ignored -> new ConcurrentHashMap<>());
+        Method method = methods.get(methodName);
+        if (method == null) {
+            method = target.getClass().getMethod(methodName);
+            methods.put(methodName, method);
+        }
+        return method;
     }
 }

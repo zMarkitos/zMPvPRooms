@@ -8,6 +8,7 @@ import dev.zm.pvprooms.models.enums.RoomState;
 import dev.zm.pvprooms.models.enums.RoomType;
 import dev.zm.pvprooms.utils.ArenaBoundaryScanner;
 import dev.zm.pvprooms.utils.CC;
+import dev.zm.pvprooms.utils.RoomSetupGuide;
 import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.boss.BarColor;
@@ -40,7 +41,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.Locale;
 
-
 public class MatchManager {
 
     private final ZMPvPRooms plugin;
@@ -62,6 +62,19 @@ public class MatchManager {
 
     public boolean joinRoom(Player player, Room room) {
         return joinRoomInternal(player, room, false);
+    }
+
+    public void refreshCountdown(Room room) {
+        if (room == null || room.getState() != RoomState.WAITING) {
+            return;
+        }
+        if (!plugin.getRoomManager().isConfigured(room) || !room.hasEnoughPlayersToStart()) {
+            return;
+        }
+        if (room.getType() == RoomType.CLAN && !isValidClanTeamComposition(room)) {
+            return;
+        }
+        startCountdown(room, false);
     }
 
     public boolean forceJoinRoom(Player player, Room room) {
@@ -91,6 +104,7 @@ public class MatchManager {
         }
 
         room.addPlayer(player);
+        notifySetupStatus(player, room);
         sendJoinFeedback(player, room);
 
         if (room.isChatEnabled()) {
@@ -314,13 +328,11 @@ public class MatchManager {
                     .replace("%player%", victim.getName()));
         }
 
-        // Inform the dying player of their options (spectate or leave)
         if (victim.isOnline()) {
             victim.sendMessage(plugin.getConfigManager().getMessage("death_spectate_prompt")
                     .replace("%room%", room.getName()));
         }
 
-        // Queue a respawn teleport to return spawn
         pendingRespawnTeleport.add(victim.getUniqueId());
 
         evaluateMatchEnd(room);
@@ -331,7 +343,6 @@ public class MatchManager {
             return;
         }
 
-        // Remove room effects BEFORE removing from room.
         plugin.getRoomEffectManager().removeEffects(victim, room);
         room.removePlayer(victim.getUniqueId());
 
@@ -419,14 +430,14 @@ public class MatchManager {
             return true;
         }
 
-        spectatorModes.put(player.getUniqueId(), player.getGameMode());
-        room.getSpectators().add(player.getUniqueId());
-        player.setGameMode(GameMode.SPECTATOR);
-
         Location target = resolveValidSpectatorTarget(room);
         if (target == null) {
             return false;
         }
+
+        spectatorModes.put(player.getUniqueId(), player.getGameMode());
+        room.getSpectators().add(player.getUniqueId());
+        player.setGameMode(GameMode.SPECTATOR);
         player.teleport(target);
         return true;
     }
@@ -602,6 +613,31 @@ public class MatchManager {
         }
     }
 
+    private void notifySetupStatus(Player player, Room room) {
+        if (plugin.getRoomManager().isConfigured(room)) {
+            return;
+        }
+        if (player.hasPermission("zmrooms.admin") || player.hasPermission("zmrooms.create")) {
+            RoomSetupGuide.sendStatus(plugin, player, room, true);
+        } else {
+            player.sendMessage(plugin.getConfigManager().getMessage("room_not_ready_for_players"));
+        }
+    }
+
+    private void notifyRoomNotConfigured(Room room) {
+        for (UUID uuid : room.getPlayers()) {
+            Player player = Bukkit.getPlayer(uuid);
+            if (player == null) {
+                continue;
+            }
+            if (player.hasPermission("zmrooms.admin") || player.hasPermission("zmrooms.create")) {
+                RoomSetupGuide.sendMissingRequired(plugin, player, room);
+            } else {
+                player.sendMessage(plugin.getConfigManager().getMessage("room_not_ready_for_players"));
+            }
+        }
+    }
+
     private void startCountdown(Room room, boolean forced) {
         if (room.getState() != RoomState.WAITING && room.getState() != RoomState.STARTING) {
             return;
@@ -690,7 +726,8 @@ public class MatchManager {
                     }
 
                     if (room.isTitlesEnabled() && time <= 5) {
-                        p.sendTitle(CC.translate("&e" + time), "", 0, 21, 0);
+                        p.sendTitle(CC.translate(plugin.getConfigManager().getRawMessage("match_countdown_title")
+                                .replace("%time%", String.valueOf(time))), "", 0, 21, 0);
                     }
                 }
 
@@ -723,9 +760,7 @@ public class MatchManager {
         if (!validateRoomConfiguration(room)) {
             room.setState(RoomState.WAITING);
             setDoors(room, false);
-            if (room.isChatEnabled()) {
-                room.broadcast(plugin.getConfigManager().getMessage("room_not_configured"));
-            }
+            notifyRoomNotConfigured(room);
             return;
         }
         if (room.getType() == RoomType.CLAN && !isValidClanTeamComposition(room)) {
@@ -950,7 +985,6 @@ public class MatchManager {
                 Player p = Bukkit.getPlayer(uuid);
                 if (p != null) resetStreak(p, room);
             }
-            // Win / loss counters.
             for (UUID uuid : winners) {
                 Player player = Bukkit.getPlayer(uuid);
                 if (player != null) {
@@ -994,22 +1028,7 @@ public class MatchManager {
     }
 
     private boolean validateRoomConfiguration(Room room) {
-        if (room.getSpawn1() == null || room.getSpawn2() == null) {
-            return false;
-        }
-
-        if (room.getSpawn1().getWorld() == null || room.getSpawn2().getWorld() == null) {
-            return false;
-        }
-
-        Optional<WorldGuardHook.RegionBounds> bounds = plugin.getRoomManager().getArenaBounds(room);
-        if (!bounds.isPresent()) {
-            return false;
-        }
-
-        String world = bounds.get().getWorldName();
-        return world.equals(room.getSpawn1().getWorld().getName())
-                && world.equals(room.getSpawn2().getWorld().getName());
+        return plugin.getRoomManager().isConfigured(room);
     }
 
     private void scheduleTimeLimit(Room room) {
@@ -1723,11 +1742,9 @@ public class MatchManager {
             lobby.timeoutTask.cancel();
         }
 
-        // Broadcast cancellation before clearing players
         room.broadcast(plugin.getConfigManager().getMessage(byOwner ? "clan_lobby_cancelled_owner" : "clan_lobby_cancelled_timeout")
                 .replace("%room%", room.getName()));
 
-        // Teleport all players back to spawn before clearing the room
         teleportToSpawn(new java.util.ArrayList<>(room.getPlayers()));
         teleportToSpawn(new java.util.ArrayList<>(room.getSpectators()));
 
@@ -1861,14 +1878,12 @@ public class MatchManager {
         roomTimeRemaining.remove(room.getName().toLowerCase());
         stopDuelBossBar(room.getName());
 
-        // Remove room effects before teleporting players away.
         plugin.getRoomEffectManager().removeAllEffectsForRoom(room);
 
         teleportToSpawn(new ArrayList<>(room.getPlayers()));
         teleportToSpawn(new ArrayList<>(room.getSpectators()));
         cleanupRoom(room);
     }
-
 
     private void teleportToSpawn(List<UUID> players) {
         for (UUID uuid : players) {

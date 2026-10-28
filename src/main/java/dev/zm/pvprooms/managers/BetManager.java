@@ -22,48 +22,22 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * Manages the betting system for rooms.
- *
- * <p>
- * Bets are placed against a specific player inside a room.
- * When the match ends,
- * {@link #processBetResults(String, Collection, Collection)} resolves all
- * active bets and dispatches the configured win/lose commands for each better.
- * </p>
- *
- * <p>
- * Active bets are kept in memory (fast, no DB round-trip during gameplay) and
- * also persisted to the database so they survive a mid-match server restart.
- * </p>
+ * Manages the betting system for rooms. Active bets are kept in memory and
+ * persisted so they survive a mid-match server restart.
  */
 public class BetManager {
 
     private final ZMPvPRooms plugin;
 
-    /**
-     * In-memory map: betterUUID → BetEntry.
-     * A player can only have one active bet at a time across all rooms.
-     */
     private final Map<UUID, BetEntry> activeBets = new HashMap<>();
 
     public BetManager(ZMPvPRooms plugin) {
         this.plugin = plugin;
     }
 
-    // GUI
-
     /**
-     * Opens the betting GUI for {@code better}, showing the heads of all
-     * players currently inside {@code room}.
-     *
-     * <p>
-     * Pre-conditions (already validated by MainCommand):
-     * </p>
-     * <ul>
-     * <li>Bets are globally enabled in config.</li>
-     * <li>The room is in STARTING or PLAYING state.</li>
-     * <li>The better is NOT a participant of this room.</li>
-     * </ul>
+     * Opens the betting GUI for the given player and room. The caller must ensure
+     * betting is enabled, the room is STARTING/PLAYING, and the player is not in it.
      */
     public void openBetMenu(Player better, Room room) {
         List<UUID> roomPlayers = new ArrayList<>(room.getPlayers());
@@ -72,7 +46,6 @@ public class BetManager {
             return;
         }
 
-        // Inventory size must be a multiple of 9, capped at 54
         int size = Math.min(54, ((roomPlayers.size() / 9) + 1) * 9);
         if (size < 9)
             size = 9;
@@ -89,14 +62,11 @@ public class BetManager {
             inv.setItem(i, buildPlayerHead(uuid, name));
         }
 
-        // Register a pending BetEntry keyed by the better's UUID
         BetEntry entry = new BetEntry(better.getUniqueId(), room.getName());
         activeBets.put(better.getUniqueId(), entry);
 
         better.openInventory(inv);
     }
-
-    // Bet confirmation
 
     /**
      * Confirms and registers a bet. Called from BetListener when the better
@@ -114,7 +84,6 @@ public class BetManager {
         entry.targetUuid = targetUuid;
         entry.targetName = targetName;
 
-        // Persist to database for restart resilience (async)
         if (plugin.getDatabase() != null) {
             final String betterUuid = better.getUniqueId().toString();
             final String betterName = better.getName();
@@ -129,8 +98,6 @@ public class BetManager {
                 .replace("%player%", targetName)
                 .replace("%room%", entry.roomName));
     }
-
-    // Result processing
 
     /**
      * Processes all active bets for {@code roomName} once the match ends.
@@ -151,7 +118,6 @@ public class BetManager {
         List<String> winCommands = plugin.getConfig().getStringList("bets.win-commands");
         List<String> loseCommands = plugin.getConfig().getStringList("bets.lose-commands");
 
-        // Snapshot in-memory bets for this room, removing them from the live map
         List<BetEntry> toProcess = new ArrayList<>();
         List<UUID> toRemove = new ArrayList<>();
         for (Map.Entry<UUID, BetEntry> mapEntry : activeBets.entrySet()) {
@@ -162,13 +128,11 @@ public class BetManager {
         }
         toRemove.forEach(activeBets::remove);
 
-        // Build a set of already-processed betterUUIDs to avoid DB duplicates
         Set<UUID> processedBetters = new HashSet<>();
         for (BetEntry e : toProcess) {
             processedBetters.add(e.betterUuid);
         }
 
-        // Also load any persisted bets from DB (handles restart-survivors)
         if (plugin.getDatabase() != null) {
             List<SQLiteDatabase.BetRow> dbBets = plugin.getDatabase().getBetsByRoom(roomName);
             for (SQLiteDatabase.BetRow row : dbBets) {
@@ -180,7 +144,6 @@ public class BetManager {
                 extra.targetName = row.betterName;
                 toProcess.add(extra);
             }
-            // Clean up DB bets for this room (async)
             Bukkit.getScheduler().runTaskAsynchronously(plugin,
                     () -> plugin.getDatabase().removeBetsByRoom(roomName));
         }
@@ -194,7 +157,6 @@ public class BetManager {
         boolean hasResult = !winners.isEmpty() || !losers.isEmpty();
 
         for (BetEntry bet : toProcess) {
-            // Resolve the better player
             Player better = Bukkit.getPlayer(bet.betterUuid);
             String betterName = better != null ? better.getName()
                     : Bukkit.getOfflinePlayer(bet.betterUuid).getName();
@@ -202,7 +164,6 @@ public class BetManager {
                 betterName = bet.betterUuid.toString().substring(0, 8);
 
             if (bet.targetUuid == null) {
-                // No player was selected → treat as cancelled (no penalty)
                 if (better != null) {
                     better.sendMessage(plugin.getConfigManager().getMessage("bets_cancelled"));
                 }
@@ -222,22 +183,18 @@ public class BetManager {
                 }
                 executeCommands(betterName, winCommands);
             } else if (hasResult) {
-                // Match had a clear result and the betted player didn't win
                 if (better != null) {
                     better.sendMessage(plugin.getConfigManager().getMessage("bets_lost")
                             .replace("%player%", targetDisplay));
                 }
                 executeCommands(betterName, loseCommands);
             } else {
-                // Draw — no winner, no loser
                 if (better != null) {
                     better.sendMessage(plugin.getConfigManager().getMessage("bets_cancelled"));
                 }
             }
         }
     }
-
-    // Accessors used by BetListener and MainCommand
 
     /** Returns the active BetEntry for a player, or {@code null} if none. */
     public BetEntry getBetEntry(Player player) {
@@ -277,8 +234,6 @@ public class BetManager {
         removeBetEntry(player);
     }
 
-    // Private helpers
-
     /**
      * Dispatches each command from the console, replacing {@code {player}} with
      * the better's name. Empty or null commands are silently skipped.
@@ -301,7 +256,7 @@ public class BetManager {
             meta.setOwningPlayer(Bukkit.getOfflinePlayer(uuid));
             meta.setDisplayName(CC.translate("&f" + displayName));
             List<String> lore = new ArrayList<>();
-            lore.add(CC.translate("&7Click to bet on this player"));
+            lore.add(plugin.getConfigManager().getRawMessage("guis.bet_player_click"));
             meta.setLore(lore);
             head.setItemMeta(meta);
         }
@@ -317,8 +272,6 @@ public class BetManager {
             return null;
         }
     }
-
-    // Data classes
 
     /**
      * Internal state for an active bet, keyed by the better's UUID in the

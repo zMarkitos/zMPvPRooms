@@ -32,14 +32,10 @@ public class EditorListener implements Listener {
         this.plugin = plugin;
     }
 
-    // Cancel block-select mode on quit
-
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent event) {
         plugin.getEditorManager().cancelBlockSelect(event.getPlayer().getUniqueId());
     }
-
-    // Block-select interaction
 
     @EventHandler
     public void onPlayerInteract(PlayerInteractEvent event) {
@@ -48,7 +44,6 @@ public class EditorListener implements Listener {
             return;
         }
 
-        // Only right-click on a block triggers selection
         if (event.getAction() != Action.RIGHT_CLICK_BLOCK && event.getAction() != Action.LEFT_CLICK_BLOCK) {
             return;
         }
@@ -58,8 +53,6 @@ public class EditorListener implements Listener {
         Block clicked = event.getClickedBlock();
         ItemStack hand = player.getInventory().getItemInMainHand();
 
-        // Prefer the block in hand over the clicked block (allows placing unseen
-        // blocks)
         Material selected = (hand != null && hand.getType().isBlock() && hand.getType().isSolid()
                 && hand.getType() != Material.AIR)
                         ? hand.getType()
@@ -77,7 +70,8 @@ public class EditorListener implements Listener {
 
         Optional<Room> optRoom = plugin.getRoomManager().getRoom(roomName);
         if (!optRoom.isPresent()) {
-            player.sendMessage(CC.translate("&cLa sala ya no existe."));
+            player.sendMessage(plugin.getConfigManager().getMessage("room_not_found")
+                    .replace("%room%", roomName == null ? "" : roomName));
             return;
         }
 
@@ -89,11 +83,8 @@ public class EditorListener implements Listener {
                 .replace("%material%", selected.name())));
         player.playSound(player.getLocation(), Sound.BLOCK_ANVIL_USE, 1f, 1.2f);
 
-        // Re-open editor
         plugin.getEditorManager().openEditor(player, roomName);
     }
-
-    // Inventory click handler
 
     @EventHandler
     public void onInventoryClick(InventoryClickEvent event) {
@@ -102,37 +93,30 @@ public class EditorListener implements Listener {
 
         Object holder = event.getView().getTopInventory().getHolder();
 
-        // Rooms list
         if (holder instanceof EditorManager.RoomsListHolder) {
             handleRoomsListClick(event, player);
             return;
         }
 
-        // Room menu
         if (holder instanceof EditorManager.RoomMenuHolder roomMenuHolder) {
             handleRoomMenuClick(event, player, roomMenuHolder.getRoomName());
             return;
         }
 
-        // Room editor
         if (holder instanceof EditorManager.RoomEditorHolder roomEditorHolder) {
             handleRoomEditorClick(event, player, roomEditorHolder.getRoomName());
             return;
         }
 
-        // Effects editor
         if (holder instanceof EditorManager.EffectsEditorHolder effectsHolder) {
             handleEffectsEditorClick(event, player, effectsHolder.getRoomName());
             return;
         }
 
-        // Potion picker
         if (holder instanceof EditorManager.PotionPickerHolder pickerHolder) {
             handlePotionPickerClick(event, player, pickerHolder.getRoomName());
         }
     }
-
-    // Rooms list handler
 
     private void handleRoomsListClick(InventoryClickEvent event, Player player) {
         event.setCancelled(true);
@@ -166,8 +150,6 @@ public class EditorListener implements Listener {
         plugin.getEditorManager().openRoomMenu(player, roomName);
     }
 
-    // Room menu handler
-
     private void handleRoomMenuClick(InventoryClickEvent event, Player player, String roomName) {
         event.setCancelled(true);
         if (event.getClickedInventory() != event.getView().getTopInventory())
@@ -192,8 +174,6 @@ public class EditorListener implements Listener {
             plugin.getEditorManager().openRoomsList(player);
         }
     }
-
-    // Room editor handler
 
     private void handleRoomEditorClick(InventoryClickEvent event, Player player, String roomName) {
         event.setCancelled(true);
@@ -258,10 +238,9 @@ public class EditorListener implements Listener {
                 changed = true;
             }
             case 28 -> {
-                // Custom block selector: enter block-select mode
                 player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1f, 1f);
                 plugin.getEditorManager().beginBlockSelect(player, room.getName());
-                return; // closes inventory inside beginBlockSelect
+                return;
             }
             case 30 -> {
                 cycleMaxTime(room);
@@ -276,7 +255,6 @@ public class EditorListener implements Listener {
                 changed = true;
             }
             case 34 -> {
-                // Open effects editor
                 player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1f, 1f);
                 plugin.getEditorManager().openEffectsEditor(player, room.getName());
                 return;
@@ -297,8 +275,6 @@ public class EditorListener implements Listener {
         plugin.getEditorManager().openEditor(player, room.getName());
     }
 
-    // Effects editor handler
-
     private void handleEffectsEditorClick(InventoryClickEvent event, Player player, String roomName) {
         event.setCancelled(true);
         if (event.getClickedInventory() != event.getView().getTopInventory())
@@ -313,21 +289,18 @@ public class EditorListener implements Listener {
         Room room = optRoom.get();
         int slot = event.getSlot();
 
-        // Back button
         if (slot == 49) {
             player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1f, 1f);
             plugin.getEditorManager().openEditor(player, roomName);
             return;
         }
 
-        // Add effect button (slot 46)
         if (slot == 46) {
             player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1f, 1f);
             plugin.getEditorManager().openPotionPicker(player, roomName);
             return;
         }
 
-        // Effect item: left click = cycle amplifier, right click = remove
         int effectIndex = plugin.getEditorManager().effectIndexForSlot(slot);
         if (effectIndex < 0 || effectIndex >= room.getEffects().size())
             return;
@@ -336,17 +309,14 @@ public class EditorListener implements Listener {
         PotionEffect existing = effects.get(effectIndex);
 
         if (event.isRightClick()) {
-            // Remove immediately
             effects.remove(effectIndex);
         } else {
-            // Cycle amplifier: 0 → 1 → 2 → remove
             int nextAmp = existing.getAmplifier() + 1;
             effects.remove(effectIndex);
             if (nextAmp <= 2) {
                 effects.add(effectIndex, new PotionEffect(
                         existing.getType(), Integer.MAX_VALUE, nextAmp, false, true, true));
             }
-            // if nextAmp > 2, effect is removed
         }
 
         room.clearEffects();
@@ -358,8 +328,6 @@ public class EditorListener implements Listener {
         plugin.getEditorManager().openEffectsEditor(player, roomName);
     }
 
-    // Potion picker handler
-
     private void handlePotionPickerClick(InventoryClickEvent event, Player player, String roomName) {
         event.setCancelled(true);
         if (event.getClickedInventory() != event.getView().getTopInventory())
@@ -367,7 +335,6 @@ public class EditorListener implements Listener {
 
         int slot = event.getSlot();
 
-        // Back button
         if (slot == 49) {
             player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1f, 1f);
             plugin.getEditorManager().openEffectsEditor(player, roomName);
@@ -386,7 +353,6 @@ public class EditorListener implements Listener {
 
         Room room = optRoom.get();
 
-        // If the effect type already exists, don't add a duplicate
         boolean alreadyExists = room.getEffects().stream()
                 .anyMatch(e -> e.getType().equals(type));
         if (alreadyExists) {
@@ -395,15 +361,12 @@ public class EditorListener implements Listener {
             return;
         }
 
-        // Add with amplifier 0 (level I) by default
         room.addEffect(new PotionEffect(type, Integer.MAX_VALUE, 0, false, true, true));
         plugin.getRoomManager().saveRooms();
 
         player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1f, 1.2f);
         plugin.getEditorManager().openEffectsEditor(player, roomName);
     }
-
-    // Private helpers
 
     private void cycleDoorMaterial(Room room) {
         Material[] order = { Material.GLASS, Material.IRON_BLOCK, Material.OBSIDIAN, Material.BEDROCK };

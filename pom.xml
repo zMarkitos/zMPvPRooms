@@ -6,7 +6,7 @@
 
     <groupId>dev.zm.pvprooms</groupId>
     <artifactId>zMPvPRooms</artifactId>
-    <version>1.4.0</version>
+    <version>1.5.0</version>
     <packaging>jar</packaging>
 
     <name>zMPvPRooms</name>
@@ -63,10 +63,17 @@
             <version>7.0.13</version>
             <scope>provided</scope>
         </dependency>
+        <!-- v8 API; the provider only uses the public subset shared with UltimateClans v9. -->
         <dependency>
             <groupId>com.github.UlrichBR</groupId>
             <artifactId>UClans-API</artifactId>
             <version>8.14.0</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>dev.zm.clan</groupId>
+            <artifactId>zMClans</artifactId>
+            <version>1.1.0</version>
             <scope>provided</scope>
         </dependency>
         <dependency>

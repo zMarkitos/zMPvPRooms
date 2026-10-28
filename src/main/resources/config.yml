@@ -74,10 +74,13 @@ hooks:
     # Enables all clan providers.
     enabled: true
 
+    # Enables the zMClans provider.
+    zmclans: true
+
     # Enables the ApexClan provider.
     apexclan: true
 
-    # Enables UltimateClans / uClans provider.
+    # Enables the UltimateClans / uClans provider (v8 and v9).
     ultimateclans: true
 
     # Enables ByteClans provider.
@@ -85,6 +88,7 @@ hooks:
 
     # Detection priority. The first available plugin will be used.
     provider-priority:
+      - "zMClans"
       - "UltimateClans"
       - "uClans"
       - "ByteClans"

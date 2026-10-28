@@ -4,7 +4,7 @@
 # Supports: & codes, hex &#RRGGBB, and MiniMessage (<red>, etc.)
 # ================================================================
 
-prefix: "&8[&czMPvPRooms&8] &7"
+prefix: "&#FF5018&lz&#EA4713&lM&#D43E0E&lP&#BF360A&lv&#A92D05&lP&#942400&lR&#AF2F06&lo&#CA3A0C&lo&#E44512&lm&#FF5018&ls &8| &r"
 
 # ----------------------------------------------------------------
 # General
@@ -34,11 +34,13 @@ messages:
   room_deleted: "&cRoom &f%room% &cdeleted."
   room_not_waiting: "&cRoom is not in waiting state."
   room_full: "&cRoom is full."
-  room_not_configured: "&cRoom is not fully configured. Set arena and spawns."
+  room_not_configured: "&cRoom &f%room% &cis not ready to start. Check its setup with &f/zmrooms edit %room%&c."
+  room_not_ready_for_players: "&cThis room is not ready to play yet. Please notify an administrator."
+  room_create_region_missing: "&cRoom &f%room% &cwas not created: no WorldGuard region with that name exists in this world. Select the area with the wand, run &f/rg define %room%&c, then run &f/zmrooms create %room% %type%&c again."
   already_in_room: "&cYou are already in a room or match."
   invalid_type: "&cInvalid room type. Use: NORMAL or CLAN."
   not_in_room: "&cYou are not inside a room."
-  room_world_mismatch: "&cYou must execute this command in the arena world: &f%world%"
+  room_world_mismatch: "&cThe position was not saved: you must be in the arena world (&f%world%&c)."
 
   # Room protection
   arena_in_use: "&cThere is an active combat in this arena."
@@ -62,6 +64,7 @@ messages:
 
   # Countdown / match start
   match_countdown_start: "&eMatch starts in &f%time%s&e."
+  match_countdown_title: "&e%time%"
   match_countdown_cancelled: "&cCountdown cancelled: not enough players."
   match_starting_actionbar: "&7Starting in: &e%time%s"
   match_starting_chat: "&7Starting in: &e%time%"
@@ -124,6 +127,7 @@ messages:
   spectate_left: "&aYou have left spectator mode."
   spectate_not_in_mode: "&cYou are not in spectator mode."
   spectate_spawn_missing: "&cThis room has no spectator spawn configured."
+  spectate_spawn_missing_setup: "&cThis room has no spectator spawn configured. Use &f/zmrooms setspectate %room%&c."
   spectate_room_not_active: "&cYou can only spectate rooms in STARTING/PLAYING."
   spectate_cannot_leave: "&cYou cannot leave the region while spectating."
 
@@ -152,12 +156,19 @@ messages:
   set_spectate_success: "&aSpectator spawn saved for &f%room%&a."
   setspawn_success: "&aGlobal return spawn has been set."
   reload_success: "&aConfiguration, rooms and languages reloaded."
-  setup_hint: "&eConfigure this room using: &f/zmrooms pos1 %room%&e, &f/zmrooms pos2 %room%&e, &f/zmrooms setspectate %room%&e."
+  setup_missing_header: "&cRoom &f%room% &cis not ready. Please configure the following:"
+  setup_missing_arena: "&8  • &cArena: &7select the area with the wand and run &f/rg define %room%&7, then &f/zmrooms save arena %room%"
+  setup_missing_spawn1: "&8  • &cSpawn 1: &7stand at the point and run &f/zmrooms pos1 %room%"
+  setup_missing_spawn2: "&8  • &cSpawn 2: &7stand at the point and run &f/zmrooms pos2 %room%"
+  setup_missing_world: "&8  • &cPositions: &7they must be in the arena world. Go back and run &f/zmrooms pos1 %room% &7and &f/zmrooms pos2 %room%"
+  setup_optional_spectator: "&8  • &7Spectator spawn (optional): &f/zmrooms setspectate %room%"
+  setup_optional_return_spawn: "&8  • &7Return spawn (if not set yet): &f/zmrooms setspawn"
+  setup_ready: "&aRoom &f%room% &ais ready to start."
 
   save_success: "&aSaved &f%mode% &afor &f%room%&a. Detected gaps: &e%detected%&a."
-  save_room_required: "&cYou must specify a room or be editing/inside one."
-  wg_required: "&cWorldGuard is required for this save mode."
-  wg_region_not_found: "&cWorldGuard region &f%room% &cwas not found in this world."
+  save_room_required: "&cYou must specify a room or be inside one. Usage: &f/zmrooms save <positions|arena|all> <room>&c."
+  wg_required: "&cWorldGuard is required to create and save rooms. Install it and enable &fhooks.worldguard&c in config.yml."
+  wg_region_not_found: "&cWorldGuard region &f%room% &cwas not found in this world. Verify that it exists and run &f/zmrooms save arena %room%&c."
   wg_region_linked: "&7Linked region: &a%room%"
 
   # Custom block select
@@ -227,6 +238,7 @@ guis:
     - " &#FF5018&l| &fClose this menu"
     - ""
     - "&#FF5018■ Click to exit"
+  bet_player_click: "&7Click to bet on this player"
 
   room_menu_title: "&8Room &7| &d%room%"
   editor_title: "&8Editing &7| &d%room%"

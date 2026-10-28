@@ -5,7 +5,7 @@ api-version: '1.19'
 author: zMarkitos_
 description: A complete and optimized PvP rooms system
 
-softdepend: [PlaceholderAPI, Vault, uClans, WorldGuard, ByteClans, ApexClan]
+softdepend: [PlaceholderAPI, Vault, uClans, UltimateClans, WorldGuard, ByteClans, ApexClan, zMClans]
 
 commands:
   zmrooms:

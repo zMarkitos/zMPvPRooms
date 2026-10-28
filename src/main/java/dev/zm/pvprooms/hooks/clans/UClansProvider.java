@@ -6,33 +6,38 @@ import me.ulrich.clans.interfaces.ClanAPI;
 import me.ulrich.clans.interfaces.UClans;
 import org.bukkit.entity.Player;
 
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import java.util.HashSet;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * Official UClans provider (no reflection).
- */
 public class UClansProvider implements ClanProvider {
 
     private static final long CACHE_TTL_MS = 15_000L;
+    private static final int MAX_CACHE_ENTRIES = 2048;
 
     private final PlayerAPIManager playerAPI;
     private final ClanAPI clanAPI;
+    private final String providerName;
     private final Map<UUID, CacheEntry> clanCache = new ConcurrentHashMap<>();
 
     public UClansProvider(UClans uClansApi) {
+        this(uClansApi, "uClans");
+    }
+
+    public UClansProvider(UClans uClansApi, String providerName) {
         this.playerAPI = uClansApi.getPlayerAPI();
         this.clanAPI = uClansApi.getClanAPI();
+        this.providerName = providerName == null || providerName.isBlank() ? "uClans" : providerName;
     }
 
     @Override
     public String getProviderName() {
-        return "uClans";
+        return providerName;
     }
 
     @Override
@@ -45,13 +50,23 @@ public class UClansProvider implements ClanProvider {
         long now = System.currentTimeMillis();
 
         CacheEntry cached = clanCache.get(playerId);
-        if (cached != null && cached.expiresAt >= now) {
+        if (cached != null && cached.expiresAt > now) {
             return cached.clanName;
         }
 
         String clanName = resolveClanName(playerId);
-        clanCache.put(playerId, new CacheEntry(clanName, now + CACHE_TTL_MS));
+        cacheClanName(playerId, clanName, now);
         return clanName;
+    }
+
+    private void cacheClanName(UUID playerId, String clanName, long now) {
+        if (clanCache.size() >= MAX_CACHE_ENTRIES) {
+            clanCache.entrySet().removeIf(entry -> entry.getValue().expiresAt <= now);
+            if (clanCache.size() >= MAX_CACHE_ENTRIES) {
+                clanCache.clear();
+            }
+        }
+        clanCache.put(playerId, new CacheEntry(clanName, now + CACHE_TTL_MS));
     }
 
     @Override
@@ -85,20 +100,21 @@ public class UClansProvider implements ClanProvider {
 
     @Override
     public Set<String> getAlliedClanNames(Player player) {
-        Set<String> allies = new HashSet<>();
         if (player == null || playerAPI == null || clanAPI == null) {
-            return allies;
+            return Collections.emptySet();
         }
 
         Optional<ClanData> clanOpt = playerAPI.getPlayerClan(player.getUniqueId());
         if (!clanOpt.isPresent()) {
-            return allies;
+            return Collections.emptySet();
         }
 
         ClanData own = clanOpt.get();
         if (own.getId() == null) {
-            return allies;
+            return Collections.emptySet();
         }
+
+        Set<String> allies = new HashSet<>();
 
         for (ClanData ally : clanAPI.getAlliances(own.getId())) {
             if (ally == null) {

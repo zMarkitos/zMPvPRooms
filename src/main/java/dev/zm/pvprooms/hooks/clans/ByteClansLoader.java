@@ -2,20 +2,19 @@ package dev.zm.pvprooms.hooks.clans;
 
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginDescriptionFile;
-import java.lang.reflect.Method;
 
-/**
- * Isolated loader for the ByteClans hook using reflection.
- */
+import java.lang.reflect.Method;
+import java.util.Locale;
+import java.util.logging.Logger;
+
 public final class ByteClansLoader {
 
-    private ByteClansLoader() {}
+    private static final String API_CLASS = "team.bytephoria.byteclans.bukkitapi.ByteClans";
 
-    /**
-     * Attempts to build a {@link ByteClansProvider} by locating an enabled ByteClans plugin.
-     */
-    public static ClanProvider tryLoad(org.bukkit.plugin.PluginManager pluginManager,
-                                       java.util.logging.Logger logger) {
+    private ByteClansLoader() {
+    }
+
+    public static ClanProvider tryLoad(org.bukkit.plugin.PluginManager pluginManager, Logger logger) {
         Plugin plugin = findPlugin(pluginManager);
         if (plugin == null || !plugin.isEnabled()) {
             return null;
@@ -23,37 +22,43 @@ public final class ByteClansLoader {
 
         Object api;
         try {
-            Class<?> byteClansClass = Class.forName("team.bytephoria.byteclans.bukkitapi.ByteClans");
-            Method getAPIMethod = byteClansClass.getMethod("getAPI");
-            api = getAPIMethod.invoke(null);
-        } catch (Exception e) {
+            Class<?> apiClass = Class.forName(API_CLASS, true, plugin.getClass().getClassLoader());
+            Method getAPI = apiClass.getMethod("getAPI");
+            api = getAPI.invoke(null);
+        } catch (ReflectiveOperationException | LinkageError error) {
             logger.warning("[ByteClansLoader] Found plugin '" + plugin.getName()
-                    + "' but failed to get its API via reflection.");
+                    + "' but failed to obtain its API.");
             return null;
         }
 
         if (api == null) {
-            logger.warning("[ByteClansLoader] ByteClans API is null — skipping hook.");
+            logger.warning("[ByteClansLoader] ByteClans API is null; skipping hook.");
             return null;
         }
 
-        logger.info("[ByteClansLoader] Successfully hooked into: " + plugin.getName());
-        return new ByteClansProvider(api);
+        try {
+            logger.info("[ByteClansLoader] Successfully hooked into: " + plugin.getName());
+            return new ByteClansProvider(api);
+        } catch (NoSuchMethodException error) {
+            logger.warning("[ByteClansLoader] ByteClans API is missing expected methods; skipping hook.");
+            return null;
+        }
     }
 
-    private static Plugin findPlugin(org.bukkit.plugin.PluginManager pm) {
-        // Try well-known plugin names first
-        Plugin p = pm.getPlugin("ByteClans");
-        if (p != null && p.isEnabled()) {
-            return p;
+    private static Plugin findPlugin(org.bukkit.plugin.PluginManager pluginManager) {
+        Plugin plugin = pluginManager.getPlugin("ByteClans");
+        if (plugin != null && plugin.isEnabled()) {
+            return plugin;
         }
-        
-        // Fallback: scan all plugins by their main class
-        for (Plugin pl : pm.getPlugins()) {
-            if (pl == null || !pl.isEnabled()) continue;
-            PluginDescriptionFile desc = pl.getDescription();
-            if (desc != null && desc.getMain() != null && desc.getMain().toLowerCase().contains("byteclans")) {
-                return pl;
+
+        for (Plugin candidate : pluginManager.getPlugins()) {
+            if (candidate == null || !candidate.isEnabled()) {
+                continue;
+            }
+            PluginDescriptionFile description = candidate.getDescription();
+            if (description != null && description.getMain() != null
+                    && description.getMain().toLowerCase(Locale.ROOT).contains("byteclans")) {
+                return candidate;
             }
         }
         return null;

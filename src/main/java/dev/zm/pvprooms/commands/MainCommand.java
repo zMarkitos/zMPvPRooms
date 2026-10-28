@@ -6,6 +6,7 @@ import dev.zm.pvprooms.models.Room;
 import dev.zm.pvprooms.models.enums.RoomState;
 import dev.zm.pvprooms.models.enums.RoomType;
 import dev.zm.pvprooms.utils.CC;
+import dev.zm.pvprooms.utils.RoomSetupGuide;
 import org.bukkit.Location;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
@@ -14,6 +15,7 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
 import dev.zm.pvprooms.database.SQLiteDatabase;
+import dev.zm.pvprooms.hooks.worldguard.WorldGuardHook;
 import java.util.Optional;
 
 public class MainCommand implements CommandExecutor {
@@ -126,22 +128,36 @@ public class MainCommand implements CommandExecutor {
             }
         }
 
+        if (roomManager.getRoom(roomName).isPresent()) {
+            player.sendMessage(plugin.getConfigManager().getMessage("room_already_exists").replace("%room%", roomName));
+            return;
+        }
+
+        WorldGuardHook hook = plugin.getWorldGuardHook();
+        if (hook == null) {
+            player.sendMessage(plugin.getConfigManager().getMessage("wg_required"));
+            return;
+        }
+
+        String worldName = player.getWorld().getName();
+        if (!hook.getRegionBounds(worldName, hook.normalizeRegionId(roomName)).isPresent()) {
+            player.sendMessage(plugin.getConfigManager().getMessage("room_create_region_missing")
+                    .replace("%room%", roomName)
+                    .replace("%type%", type.name()));
+            return;
+        }
+
         Room room = roomManager.createRoom(roomName, type);
         if (room == null) {
             player.sendMessage(plugin.getConfigManager().getMessage("room_already_exists").replace("%room%", roomName));
             return;
         }
 
-        if (plugin.getWorldGuardHook() == null) {
+        if (!roomManager.bindRoomToRegion(room, worldName, roomName)) {
             roomManager.deleteRoom(roomName);
-            player.sendMessage(plugin.getConfigManager().getMessage("wg_required"));
-            return;
-        }
-
-        boolean configuredWithRegion = roomManager.bindRoomToRegion(room, player.getWorld().getName(), roomName);
-        if (!configuredWithRegion) {
-            roomManager.deleteRoom(roomName);
-            player.sendMessage(plugin.getConfigManager().getMessage("wg_region_not_found").replace("%room%", roomName));
+            player.sendMessage(plugin.getConfigManager().getMessage("room_create_region_missing")
+                    .replace("%room%", roomName)
+                    .replace("%type%", type.name()));
             return;
         }
 
@@ -151,8 +167,9 @@ public class MainCommand implements CommandExecutor {
         String created = plugin.getConfigManager().getMessage("room_created")
                 .replace("%room%", roomName)
                 .replace("%type%", type.name());
-        created += " " + plugin.getConfigManager().getMessage("wg_region_linked").replace("%room%", roomName);
+        created += " " + plugin.getConfigManager().getRawMessage("wg_region_linked").replace("%room%", roomName);
         player.sendMessage(created);
+        RoomSetupGuide.sendStatus(plugin, player, room, true);
     }
 
     private void handleDelete(CommandSender sender, String[] args) {
@@ -366,13 +383,11 @@ public class MainCommand implements CommandExecutor {
             return;
         }
 
-        // Global toggle
         if (!plugin.getConfig().getBoolean("settings.bets-enabled", false)) {
             player.sendMessage(plugin.getConfigManager().getMessage("bets_disabled_global"));
             return;
         }
 
-        // Room argument required
         if (args.length < 2) {
             player.sendMessage(plugin.getConfigManager().getMessage("usage_bet"));
             return;
@@ -388,25 +403,21 @@ public class MainCommand implements CommandExecutor {
 
         dev.zm.pvprooms.models.Room room = roomOpt.get();
 
-        // Room must be active (starting or playing)
         if (room.getState() != RoomState.STARTING && room.getState() != RoomState.PLAYING) {
             player.sendMessage(plugin.getConfigManager().getMessage("bets_room_not_active"));
             return;
         }
 
-        // A participant cannot bet on their own match
         if (room.getPlayers().contains(player.getUniqueId())) {
             player.sendMessage(plugin.getConfigManager().getMessage("bets_self_forbidden"));
             return;
         }
 
-        // Need at least one player in the room to bet on
         if (room.getPlayers().isEmpty()) {
             player.sendMessage(plugin.getConfigManager().getMessage("bets_not_enough_players"));
             return;
         }
 
-        // Prevent double-betting in the same room
         dev.zm.pvprooms.managers.BetManager.BetEntry existing =
                 plugin.getBetManager().getBetEntry(player);
         if (existing != null && roomName.equalsIgnoreCase(existing.roomName)) {
@@ -560,6 +571,8 @@ public class MainCommand implements CommandExecutor {
         player.sendMessage(plugin.getConfigManager().getMessage("set_pos_success")
                 .replace("%room%", room.getName())
                 .replace("%team%", String.valueOf(team)));
+        RoomSetupGuide.sendMissingRequired(plugin, player, room);
+        plugin.getMatchManager().refreshCountdown(room);
     }
 
     private void handleSetSpectateSpawn(CommandSender sender, String[] args) {
@@ -603,6 +616,9 @@ public class MainCommand implements CommandExecutor {
 
         player.sendMessage(plugin.getConfigManager().getMessage("set_spectate_success")
                 .replace("%room%", room.getName()));
+        if (!plugin.getRoomManager().isConfigured(room)) {
+            RoomSetupGuide.sendMissingRequired(plugin, player, room);
+        }
     }
 
     private void handleSpectate(CommandSender sender, String[] args) {
@@ -642,7 +658,8 @@ public class MainCommand implements CommandExecutor {
 
         Room room = optionalRoom.get();
         if (room.getSpectatorSpawn() == null) {
-            player.sendMessage(plugin.getConfigManager().getMessage("spectate_spawn_missing"));
+            player.sendMessage(plugin.getConfigManager().getMessage("spectate_spawn_missing_setup")
+                    .replace("%room%", room.getName()));
             return;
         }
 
@@ -658,7 +675,8 @@ public class MainCommand implements CommandExecutor {
 
         boolean spectating = plugin.getMatchManager().addSpectator(player, room);
         if (!spectating) {
-            player.sendMessage(plugin.getConfigManager().getMessage("spectate_spawn_missing"));
+            player.sendMessage(plugin.getConfigManager().getMessage("spectate_spawn_missing_setup")
+                    .replace("%room%", room.getName()));
             return;
         }
         player.sendMessage(plugin.getConfigManager().getMessage("spectate_joined")

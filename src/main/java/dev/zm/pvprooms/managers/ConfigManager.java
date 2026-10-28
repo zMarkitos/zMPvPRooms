@@ -7,8 +7,11 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 public class ConfigManager {
+
+    private static final String DEFAULT_LANGUAGE = "EN";
 
     private final ZMPvPRooms plugin;
     private FileConfiguration langConfig;
@@ -22,13 +25,18 @@ public class ConfigManager {
     public void setupLang() {
         saveDefaultLangFiles();
 
-        String lang = plugin.getConfig().getString("settings.language", "ES").toUpperCase();
-        langFile = new File(plugin.getDataFolder() + File.separator + "lang", "lang_" + lang + ".yml");
+        String lang = plugin.getConfig().getString("settings.language", DEFAULT_LANGUAGE);
+        if (lang == null || lang.isBlank()) {
+            lang = DEFAULT_LANGUAGE;
+        }
+        lang = lang.trim().toUpperCase(Locale.ROOT);
 
+        langFile = new File(plugin.getDataFolder() + File.separator + "lang", "lang_" + lang + ".yml");
         if (!langFile.exists()) {
-            plugin.getLogger()
-                    .warning("Language file lang_" + lang + ".yml does not exist. Loading EN by default.");
-            langFile = new File(plugin.getDataFolder() + File.separator + "lang", "lang_ES.yml");
+            plugin.getLogger().warning("Language file lang_" + lang
+                    + ".yml does not exist. Loading " + DEFAULT_LANGUAGE + " by default.");
+            langFile = new File(plugin.getDataFolder() + File.separator + "lang",
+                    "lang_" + DEFAULT_LANGUAGE + ".yml");
         }
 
         langConfig = YamlConfiguration.loadConfiguration(langFile);
@@ -61,45 +69,29 @@ public class ConfigManager {
         return langConfig;
     }
 
-    /**
-     * Obtiene un mensaje con el prefijo incluido.
-     */
     public String getMessage(String path) {
         String prefix = getRawMessage("prefix");
         String message = getRawMessage(path);
 
-        // Si no se encuentra el mensaje, getRawMessage ya devuelve el error.
-        // Pero para getMessage, si es el prefijo el que no se encuentra, evitamos
-        // duplicar errores.
         if (path.equals("prefix"))
             return message;
 
         return dev.zm.pvprooms.utils.CC.translate(prefix + message);
     }
 
-    /**
-     * Obtiene un mensaje sin el prefijo.
-     */
     public String getRawMessage(String path) {
-        // 1. Try in the root
         if (langConfig.isString(path)) {
             return dev.zm.pvprooms.utils.CC.translate(langConfig.getString(path));
         }
 
-        // 2. Try in the messages section
         String msgPath = "messages." + path;
         if (langConfig.isString(msgPath)) {
             return dev.zm.pvprooms.utils.CC.translate(langConfig.getString(msgPath));
         }
 
-        // 3. Fallback (for debugging)
-        // plugin.getLogger().warning("Message not found: " + path);
         return "&cMessage not found: " + path;
     }
 
-    /**
-     * Obtiene una lista de mensajes traducidos.
-     */
     public List<String> getMessageList(String path) {
         List<String> list = langConfig.getStringList(path);
         if (list.isEmpty()) {

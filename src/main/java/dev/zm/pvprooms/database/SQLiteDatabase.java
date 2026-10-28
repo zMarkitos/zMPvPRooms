@@ -38,8 +38,6 @@ public class SQLiteDatabase {
         runMigrations();
     }
 
-    // Connection management
-
     private void connect() {
         File dbFile = new File(plugin.getDataFolder(), "database.db");
         try {
@@ -93,8 +91,6 @@ public class SQLiteDatabase {
             plugin.getLogger().log(Level.SEVERE, "Error closing SQLite connection", e);
         }
     }
-
-    // Schema
 
     private void createTables() {
         String playerStats =
@@ -174,8 +170,6 @@ public class SQLiteDatabase {
         }
     }
 
-    // Migration system
-
     /**
      * Current schema version. Increment this constant and add a migration block
      * in {@link #runMigrations()} whenever a structural change is needed.
@@ -213,7 +207,6 @@ public class SQLiteDatabase {
             applyMigration(2, "CREATE INDEX IF NOT EXISTS idx_bets_room ON player_bets(room_name);");
         }
 
-        // Save updated version
         setSetting("db_schema_version", String.valueOf(CURRENT_SCHEMA_VERSION));
         plugin.getLogger().info("[DB] Migration complete. Schema is now v" + CURRENT_SCHEMA_VERSION + ".");
     }
@@ -229,8 +222,6 @@ public class SQLiteDatabase {
             plugin.getLogger().warning("[DB] Migration v" + version + " DDL failed: " + e.getMessage());
         }
     }
-
-    // Atomic stat operations (UPSERT pattern — thread-safe with WAL)
 
     /**
      * Ensures the player row exists, then atomically increments a single stat
@@ -377,8 +368,6 @@ public class SQLiteDatabase {
         setStat(uuid, playerName, "streak", 0, roomName);
     }
 
-    // Leaderboard queries
-
     /**
      * Returns up to {@code limit} entries ordered by {@code column} descending.
      * Only rows with name IS NOT NULL are included.
@@ -412,8 +401,6 @@ public class SQLiteDatabase {
         }
         return result;
     }
-
-    // Personal stats query
 
     /**
      * Loads a complete stat row for the given UUID, or a zeroed snapshot if
@@ -457,8 +444,6 @@ public class SQLiteDatabase {
         return row;
     }
 
-    // Plugin settings
-
     public void setSetting(String key, String value) {
         if (key == null || key.trim().isEmpty()) return;
         String query =
@@ -490,8 +475,6 @@ public class SQLiteDatabase {
         }
         return null;
     }
-
-    // Bet persistence
 
     /**
      * Saves a bet record. Called when a player confirms their bet.
@@ -567,8 +550,6 @@ public class SQLiteDatabase {
         }
     }
 
-    // Helpers
-
     private void tryRollback(Connection conn) {
         try { conn.rollback(); } catch (SQLException ignored) {}
     }
@@ -576,8 +557,6 @@ public class SQLiteDatabase {
     private void tryRestoreAutoCommit(Connection conn) {
         try { conn.setAutoCommit(true); } catch (SQLException ignored) {}
     }
-
-    // Data transfer objects
 
     /** A single leaderboard entry. */
     public static final class TopEntry {

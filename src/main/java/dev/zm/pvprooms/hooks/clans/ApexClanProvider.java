@@ -3,36 +3,26 @@ package dev.zm.pvprooms.hooks.clans;
 import org.bukkit.entity.Player;
 
 import java.lang.reflect.Method;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import java.util.HashSet;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
 
-/**
- * Reflection-based provider for ApexClan.
- *
- * This keeps the plugin optional at runtime: if ApexClan is not installed or
- * the API changes, the hook simply stays disabled instead of breaking startup.
- */
 public final class ApexClanProvider implements ClanProvider {
 
     private final Object clanService;
     private final Logger logger;
     private final Method getClanMethod;
-    private final Method getClanByNameMethod;
-    private final Method getRelationMethod;
+    private final Map<Class<?>, Method[]> labelMethods = new ConcurrentHashMap<>();
 
     public ApexClanProvider(Object clanService, Logger logger) throws NoSuchMethodException {
         this.clanService = clanService;
         this.logger = logger;
-        Class<?> serviceClass = clanService.getClass();
-        this.getClanMethod = serviceClass.getMethod("getClan", UUID.class);
-        this.getClanByNameMethod = findOptionalMethod(serviceClass, "getClanByName", String.class);
-        this.getRelationMethod = findOptionalMethod(serviceClass, "getRelation", UUID.class, UUID.class);
+        this.getClanMethod = clanService.getClass().getMethod("getClan", UUID.class);
     }
 
     @Override
@@ -42,18 +32,14 @@ public final class ApexClanProvider implements ClanProvider {
 
     @Override
     public String getClanName(Player player) {
-        if (player == null || clanService == null) {
+        if (player == null) {
             return null;
         }
-
         try {
             Optional<?> clan = getClan(player.getUniqueId());
-            if (!clan.isPresent()) {
-                return null;
-            }
-            return resolveClanLabel(clan.get());
-        } catch (Exception ex) {
-            logger.fine("[ApexClanProvider] Failed to resolve clan for " + player.getName() + ": " + ex.getMessage());
+            return clan.map(this::resolveClanLabel).orElse(null);
+        } catch (ReflectiveOperationException error) {
+            logger.fine("[ApexClanProvider] Failed to resolve clan for " + player.getName() + ": " + error.getMessage());
             return null;
         }
     }
@@ -68,41 +54,47 @@ public final class ApexClanProvider implements ClanProvider {
 
     @Override
     public Set<String> getAlliedClanNames(Player player) {
-        if (player == null || clanService == null) {
-            return Collections.emptySet();
-        }
-        return new HashSet<>();
+        return Collections.emptySet();
     }
 
-    private Optional<?> getClan(UUID playerId) throws Exception {
+    private Optional<?> getClan(UUID playerId) throws ReflectiveOperationException {
         Object result = getClanMethod.invoke(clanService, playerId);
-        if (result instanceof Optional) {
-            return (Optional<?>) result;
+        if (result instanceof Optional<?> optional) {
+            return optional;
         }
         return Optional.ofNullable(result);
     }
 
-    private String resolveClanLabel(Object clan) throws Exception {
+    private String resolveClanLabel(Object clan) {
         if (clan == null) {
             return null;
         }
-
-        for (String methodName : new String[] { "getTag", "getName" }) {
+        Method[] methods = labelMethods.computeIfAbsent(clan.getClass(), this::resolveLabelMethods);
+        for (Method method : methods) {
+            if (method == null) {
+                continue;
+            }
             try {
-                Object value = clan.getClass().getMethod(methodName).invoke(clan);
-                if (value instanceof String && !((String) value).trim().isEmpty()) {
-                    return ((String) value).trim();
+                Object value = method.invoke(clan);
+                if (value instanceof String text && !text.trim().isEmpty()) {
+                    return text.trim();
                 }
-            } catch (NoSuchMethodException ignored) {
-                // Try next candidate.
+            } catch (ReflectiveOperationException ignored) {
             }
         }
         return null;
     }
 
-    private static Method findOptionalMethod(Class<?> type, String name, Class<?>... params) {
+    private Method[] resolveLabelMethods(Class<?> type) {
+        Method[] methods = new Method[2];
+        methods[0] = findMethod(type, "getTag");
+        methods[1] = findMethod(type, "getName");
+        return methods;
+    }
+
+    private Method findMethod(Class<?> type, String name) {
         try {
-            return type.getMethod(name, params);
+            return type.getMethod(name);
         } catch (NoSuchMethodException ignored) {
             return null;
         }

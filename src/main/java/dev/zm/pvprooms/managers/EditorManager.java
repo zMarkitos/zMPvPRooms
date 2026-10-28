@@ -3,6 +3,7 @@ package dev.zm.pvprooms.managers;
 import dev.zm.pvprooms.ZMPvPRooms;
 import dev.zm.pvprooms.models.Room;
 import dev.zm.pvprooms.utils.CC;
+import dev.zm.pvprooms.utils.RoomSetupGuide;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -35,8 +36,6 @@ public class EditorManager {
             19, 20, 21, 22, 23, 24, 25,
             28, 29, 30, 31, 32, 33, 34
     };
-
-    // ─── Inventory Holders ────────────────────────────────────────────────────
 
     public static class RoomsListHolder implements InventoryHolder {
         private Inventory inventory;
@@ -82,15 +81,10 @@ public class EditorManager {
         public String getRoomName() { return roomName; }
     }
 
-    // ─── Constructor ──────────────────────────────────────────────────────────
-
     public EditorManager(ZMPvPRooms plugin) {
         this.plugin = plugin;
     }
 
-    // ─── Block-select mode ────────────────────────────────────────────────────
-
-    /** Returns true if the player is waiting to select a block for a room. */
     public boolean isAwaitingBlockSelect(UUID uuid) {
         return pendingBlockSelect.containsKey(uuid);
     }
@@ -114,8 +108,6 @@ public class EditorManager {
         player.closeInventory();
         player.sendMessage(CC.translate(plugin.getConfigManager().getRawMessage("block_select_prompt")));
     }
-
-    // ─── Rooms List GUI ───────────────────────────────────────────────────────
 
     public void openRoomsList(Player player) {
         RoomsListHolder holder = new RoomsListHolder();
@@ -150,12 +142,11 @@ public class EditorManager {
         player.openInventory(gui);
     }
 
-    // ─── Room Menu GUI ────────────────────────────────────────────────────────
-
     public void openRoomMenu(Player player, String roomName) {
         Optional<Room> optRoom = plugin.getRoomManager().getRoom(roomName);
         if (!optRoom.isPresent()) {
-            player.sendMessage(CC.translate("&cLa sala no existe."));
+            player.sendMessage(plugin.getConfigManager().getMessage("room_not_found")
+                    .replace("%room%", roomName));
             return;
         }
         Room room = optRoom.get();
@@ -210,9 +201,10 @@ public class EditorManager {
         gui.setItem(22, back);
 
         player.openInventory(gui);
+        if (!configured) {
+            RoomSetupGuide.sendStatus(plugin, player, room, true);
+        }
     }
-
-    // ─── Room Editor GUI ──────────────────────────────────────────────────────
 
     public void openEditor(Player player, String roomName) {
         Optional<Room> optRoom = plugin.getRoomManager().getRoom(roomName);
@@ -240,13 +232,11 @@ public class EditorManager {
                 getGuiLore("guis.editor_keepinv_lore").stream()
                         .map(line -> line.replace("%status%", room.isKeepInventory() ? enabled : disabled)).toList());
 
-        // Door material with custom block selection hint
         List<String> doorLore = new ArrayList<>(getGuiLore("guis.editor_doors_lore").stream()
                 .map(line -> line.replace("%material%", room.getDoorMaterial().name())).toList());
         ItemStack doorMatItem = createItem(room.getDoorMaterial(),
                 plugin.getConfigManager().getRawMessage("guis.editor_doors_name"), doorLore);
 
-        // Custom block select item
         List<String> blockLore = new ArrayList<>(getGuiLore("guis.editor_block_lore").stream()
                 .map(line -> line.replace("%material%", room.getDoorMaterial().name())).toList());
         ItemStack blockItem = createItem(Material.WRITABLE_BOOK,
@@ -299,7 +289,6 @@ public class EditorManager {
                 getGuiLore("guis.editor_posttime_lore").stream()
                         .map(line -> line.replace("%time%", room.getPostMatchTeleportDelay() + "s")).toList());
 
-        // Effects item: shows how many effects are configured
         String effectCount = String.valueOf(room.getEffects().size());
         ItemStack effectsItem = createItem(Material.BREWING_STAND,
                 plugin.getConfigManager().getRawMessage("guis.editor_effects_name"),
@@ -310,35 +299,25 @@ public class EditorManager {
                 plugin.getConfigManager().getRawMessage("guis.editor_back_name"),
                 getGuiLore("guis.editor_back_lore"));
 
-        // Row 1 (slots 10-16)
         gui.setItem(10, typeItem);
         gui.setItem(12, keepInvItem);
         gui.setItem(14, doorMatItem);
         gui.setItem(16, actionItem);
-        // Row 2 (slots 19-25)
         gui.setItem(19, teamSizeItem);
         gui.setItem(21, minPlayersItem);
         gui.setItem(23, delayItem);
         gui.setItem(25, betItem);
-        // Row 3 (slots 28-34)
-        gui.setItem(28, blockItem);      // Custom block selector
+        gui.setItem(28, blockItem);
         gui.setItem(30, timeItem);
-        gui.setItem(31, statusItem);     // Room status toggle
+        gui.setItem(31, statusItem);
         gui.setItem(32, postTimeItem);
-        gui.setItem(34, effectsItem);    // Effects manager
+        gui.setItem(34, effectsItem);
 
         gui.setItem(49, backItem);
 
         player.openInventory(gui);
     }
 
-    // ─── Effects Editor GUI ───────────────────────────────────────────────────
-
-    /**
-     * Opens the effects management GUI for a room.
-     * Slots 10-43 show current effects (up to 21 max).
-     * Slot 46 = Add effect, Slot 52 = Back.
-     */
     public void openEffectsEditor(Player player, String roomName) {
         Optional<Room> optRoom = plugin.getRoomManager().getRoom(roomName);
         if (!optRoom.isPresent()) return;
@@ -353,7 +332,6 @@ public class EditorManager {
         ItemStack glass = createItem(Material.GRAY_STAINED_GLASS_PANE, " ", List.of());
         for (int i = 0; i < gui.getSize(); i++) gui.setItem(i, glass);
 
-        // Display existing effects in the center slots
         int[] effectSlots = {10, 11, 12, 13, 14, 15, 16,
                              19, 20, 21, 22, 23, 24, 25,
                              28, 29, 30, 31, 32, 33, 34};
@@ -363,13 +341,11 @@ public class EditorManager {
             gui.setItem(effectSlots[i], buildEffectItem(effect));
         }
 
-        // Add effect button
         ItemStack addItem = createItem(Material.NETHER_STAR,
                 plugin.getConfigManager().getRawMessage("guis.effects_add_name"),
                 getGuiLore("guis.effects_add_lore"));
         gui.setItem(46, addItem);
 
-        // Back button
         ItemStack backItem = createItem(Material.ARROW,
                 plugin.getConfigManager().getRawMessage("guis.editor_back_name"),
                 getGuiLore("guis.editor_back_lore"));
@@ -395,8 +371,6 @@ public class EditorManager {
                 .toList();
         return createItem(mat, "&b" + typeName + " &7" + levelLabel, lore);
     }
-
-    // ─── Potion Picker GUI ────────────────────────────────────────────────────
 
     /**
      * Opens a GUI for the player to pick a potion effect type to add to the room.
@@ -433,8 +407,6 @@ public class EditorManager {
 
         player.openInventory(gui);
     }
-
-    // ─── Helpers ──────────────────────────────────────────────────────────────
 
     private ItemStack createItem(Material mat, String name, List<String> lore) {
         ItemStack item = new ItemStack(mat);

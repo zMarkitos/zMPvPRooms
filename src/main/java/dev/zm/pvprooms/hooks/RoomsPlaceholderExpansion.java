@@ -158,7 +158,6 @@ public class RoomsPlaceholderExpansion extends PlaceholderExpansion {
                 double kdr = totalDeaths <= 0 ? totalKills : totalKills / (double) totalDeaths;
                 return String.format(Locale.US, "%.2f", kdr);
             }
-            // Normal mode
             case "mynormalkills":
                 return String.valueOf(stats.normalKills);
             case "mynormaldeaths":
@@ -167,7 +166,6 @@ public class RoomsPlaceholderExpansion extends PlaceholderExpansion {
                 return String.valueOf(stats.normalWins);
             case "mynormallosses":
                 return String.valueOf(stats.normalLosses);
-            // Clan mode
             case "myclankills":
                 return String.valueOf(stats.clanKills);
             case "myclandeaths":
@@ -339,8 +337,6 @@ public class RoomsPlaceholderExpansion extends PlaceholderExpansion {
             personalCache.remove(uuid);
         }
     }
-
-    // Internal cache holder
 
     private static final class CachedStats {
         final SQLiteDatabase.StatRow row;
